@@ -1,7 +1,7 @@
 # newconformist
 Conformally map the hyperbolic plane to arbitrary shapes.
 
-http://roguetemple.com/z/newconformist/result.png
+![sample picture](http://roguetemple.com/z/newconformist/result.png)
 
 # References
 
@@ -15,10 +15,10 @@ Bulatov uses specific formulas to map to the hyperbolic plane to multiple shapes
 how to map to this shape.
 
 The computational aspect of the Riemann's mapping theorem is a well studied problem (see the references in the Wikipedia article above); the algorithm
-used by newconformist is independent of this research, though. We have not compared it to the known algorithm. The inspiration for this project comes
+used by newconformist is independent of this research, though. We have not compared it to the known algorithms. The inspiration for this project comes
 from the recent rectangular conformal mappings by @ChristopherKing42 (but we do not know what algorithm he has been using).
 
-Newconformist can also conformally map an annulus to a subset which is homeomorphic to it. (We have not tried to prove a version of
+Newconformist can also conformally map an annulus to a subset which is homeomorphic to it. (We have not tried to actually prove a version of
 Riemann's mapping theorem for annuli, but since newconformist works, we suppose it is true.)
 
 # Algorithm
