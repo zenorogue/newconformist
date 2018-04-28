@@ -18,7 +18,8 @@ The computational aspect of the Riemann's mapping theorem is a well studied prob
 used by newconformist is independent of this research, though. We have not compared it to the known algorithms. The inspiration for this project comes
 from the recent rectangular conformal mappings by @ChristopherKing42 (but we do not know what algorithm he has been using).
 
-Newconformist can also conformally map an annulus to a subset which is homeomorphic to it. (We have not tried to actually prove a version of
+Newconformist can also conformally map an annulus to a subset which is homeomorphic to it. This is used to map the outside of the cat in the sample
+image above. (We have not tried to actually prove a version of
 Riemann's mapping theorem for annuli, but since newconformist works, we suppose it is true.)
 
 # Algorithm
