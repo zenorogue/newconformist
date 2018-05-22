@@ -62,4 +62,4 @@ draw-hilbert-chaos: nconf
 draw-hilbert-std: nconf
 	./nconf \
 	  -lm hilbert.map -lbands 1 11 std%d.png  \
-	  -draw
+	  -draw -export hilbert-std.png

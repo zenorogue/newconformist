@@ -465,13 +465,15 @@ void draw(bitmap &b) {
 
 ld anim_speed;
 
+bool break_loop = false;
+
 void klawisze() {
   SDL_Event event;
   SDL_Delay(1);
   int ev;
   while(ev = SDL_PollEvent(&event)) switch (event.type) {
     case SDL_QUIT:
-      exit(1);
+      break_loop = true;
       return;
 
     case SDL_MOUSEBUTTONDOWN: {
@@ -500,7 +502,8 @@ void klawisze() {
       if(key == '0') anim_speed = 0;
       if(key == 'r') anim_speed = -anim_speed;
       
-      if(key == 'q') exit(1);
+      if(key == 'q') 
+        break_loop = true;
       
       break;
       }
@@ -517,6 +520,8 @@ void load_image(const string& fname) {
 void load_image_band(const string& fname) {
   img_band[sides-1].push_back(readPng(fname));
   }
+
+bool need_measure = true;
 
 void measure(int si) {
   vector<ld> cscs[2];
@@ -560,11 +565,19 @@ void measure(int si) {
     }
   }
 
+void measure_if_needed() {
+  if(need_measure) {
+    need_measure = false;
+    for(int si=0; si<sides; si++) measure(si);
+    }
+  }
+
 void ui() {
-  for(int si=0; si<sides; si++) measure(si);  
+  measure_if_needed();
   initGraph(SX, SY, "conformist", false);
   int t = SDL_GetTicks();
-  while(true) {
+  break_loop = false;
+  while(!break_loop) {
     int t1 = SDL_GetTicks();
     for(int i=0; i<sides; i++)
       xcenter[i] += cscale[i][0] * anim_speed * (t1-t) / 1000.;
@@ -576,7 +589,7 @@ void ui() {
   }
 
 void export_image(const string& fname) {
-  for(int si=0; si<sides; si++) measure(si);
+  measure_if_needed();
   bitmap b = emptyBitmap(SX, SY);
   draw(b);
   for(int y=0; y<SY; y++)
