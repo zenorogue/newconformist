@@ -463,6 +463,8 @@ void draw(bitmap &b) {
   b.draw();
   }
 
+ld anim_speed;
+
 void klawisze() {
   SDL_Event event;
   SDL_Delay(1);
@@ -485,6 +487,18 @@ void klawisze() {
     case SDL_KEYDOWN: {
       int key = event.key.keysym.sym;
       int uni = event.key.keysym.unicode;
+      
+      if(key == '1') anim_speed = .01;
+      if(key == '2') anim_speed = .03;
+      if(key == '3') anim_speed = .1;
+      if(key == '4') anim_speed = .3;
+      if(key == '5') anim_speed = 1;
+      if(key == '6') anim_speed = 3;
+      if(key == '7') anim_speed = 9;
+      if(key == '8') anim_speed = 27;
+      if(key == '9') anim_speed = 81;
+      if(key == '0') anim_speed = 0;
+      if(key == 'r') anim_speed = -anim_speed;
       
       if(key == 'q') exit(1);
       
@@ -549,7 +563,13 @@ void measure(int si) {
 void ui() {
   for(int si=0; si<sides; si++) measure(si);  
   initGraph(SX, SY, "conformist", false);
+  int t = SDL_GetTicks();
   while(true) {
+    int t1 = SDL_GetTicks();
+    for(int i=0; i<sides; i++)
+      xcenter[i] += cscale[i][0] * anim_speed * (t1-t) / 1000.;
+    t = t1;
+    
     draw(screen);
     klawisze();
     }
