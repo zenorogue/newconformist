@@ -162,21 +162,45 @@ void createb(bool inner, const string& fname) {
         bx = x, by = y;
         first = false;
         }
-    pts[by][bx].type = 7;
-    bx--; int d = 0;
     
-    int phase = 5;
-    
-    for(int iter=0; iter<100000; iter++) {
-      d &= 3;
-      auto& pt2 = pts[by+dy[d]][bx+dx[d]];
-      if(pt2.type == phase+2 || pt2.type == phase) d++;
-      else if(pt2.type == 0) { pt2.type = phase; d++; }
-      else if(pt2.type == 6 || pt2.type == 7) { phase--; if(phase == 3) break; }
-      else if(pt2.type == 1) { by += dy[d]; bx += dx[d]; d--; }
-      }
-
+    split_boundary(ax, ay, bx, by, 0);
     }
+  }
+
+// Hilbert curve
+
+void create_hilbert(int lev, int pix, int border) {
+  sides = 1;
+  sidetype[0] = 0;
+  SY = SX = pix << lev;
+  resize_pt();
+  for(int y=0; y<SY; y++) 
+  for(int x=0; x<SX; x++) 
+    pts[y][x].side = 0, 
+    pts[y][x].type = 0;
+  int wx=0, wy=0;
+  auto connection = [&] (int dir) {
+    printf("%d %d %d\n", wx, wy, dir);
+    for(int dy=(dir==1?-border:border); dy<(dir==3?pix+border:pix-border); dy++)
+    for(int dx=(dir==2?-border:border); dx<(dir==0?pix+border:pix-border); dx++)
+      pts[dy+wy*pix][dx+wx*pix].type = 1;
+    if(dir<4) 
+      wx += dx[dir], wy += dy[dir];      
+    };
+  std::function<void(int,int,int)> hilbert_recursive = [&] (int maindir, int subdir, int l) {
+    if(l == 0) return;
+    hilbert_recursive(subdir, maindir, l-1);
+    connection(subdir);
+    hilbert_recursive(maindir, subdir, l-1);
+    connection(maindir);
+    hilbert_recursive(maindir, subdir, l-1);
+    connection(subdir^2);
+    hilbert_recursive(subdir^2, maindir^2, l-1);
+    };
+  pts[border-1][pix/2].type = 6;
+  hilbert_recursive(0, 3, lev);
+  connection(4);
+  split_boundary(pix/2, border-1, SX-1-pix/2, border-1, 1);
   }
 
 void saveb(const string& s) {  
@@ -184,8 +208,8 @@ void saveb(const string& s) {
   printf("%d %d\n", SX, SY);
   for(int y=0; y<SY; y++) {
     for(int x=0; x<SX; x++)
-      printf("%c", "X.-+TDLR" [pts[y][x].type]);
-    printf("\n");
+      fprintf(f, "%c", "X.-+TDLR" [pts[y][x].type]);
+    fprintf(f, "\n");
     }
   fclose(f);
   }
