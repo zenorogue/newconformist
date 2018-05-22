@@ -25,10 +25,18 @@
 #include <cmath>
 #include <string>
 #include <algorithm>
+#include <functional>
 
 using namespace std;
 
 #define MAXSIDE 16
+
+int SX, SY;
+
+int dx[4] = {1, 0, -1, 0};
+int dy[4] = {0, -1, 0, 1};
+
+void resize_pt();
 
 #include "mat.cpp"
 #include "zebra.cpp"
@@ -49,11 +57,6 @@ struct datapoint {
   };
 
 vector<vector<datapoint>> pts;
-
-int SX, SY;
-
-int dx[4] = {1, 0, -1, 0};
-int dy[4] = {0, -1, 0, 1};
 
 ld scalex = 1, scaley = 1;
 int marginx = 32, marginy = 32;
@@ -77,6 +80,26 @@ void createb_rectangle() {
       else if(x == 0) p.type = 6;
       else p.type = 7;
       }
+    }
+  }
+
+void split_boundary(int ax, int ay, int bx, int by, int d) {
+
+  pts[ay][ax].type = 6;
+
+  int phase = 5;
+
+  pts[by][bx].type = 7;
+  bx -= dx[d], by -= dy[d];
+  
+  for(int iter=0; iter<100000; iter++) {
+    printf("%d %d %d %d\n", bx, by, d, phase);
+    d &= 3;
+    auto& pt2 = pts[by+dy[d]][bx+dx[d]];
+    if(pt2.type == phase+2 || pt2.type == phase) d++;
+    else if(pt2.type == 0) { pt2.type = phase; d++; }
+    else if(pt2.type == 6 || pt2.type == 7) { phase--; if(phase == 3) break; }
+    else if(pt2.type == 1) { by += dy[d]; bx += dx[d]; d--; }
     }
   }
 
@@ -123,9 +146,11 @@ void createb(bool inner, const string& fname) {
     }
   
   if(inner) {
+    int ax, ay;
+    
     for(int x=0; x<SX; x++) for(int y=0; y<SY; y++)
       if(pts[y][x].type == 0 && pts[y][x+1].type == 1) {
-        pts[y][x].type = 6;
+        ax = x, ay = y;
         goto bxy;
         }
   
@@ -556,6 +581,12 @@ int main(int argc, char **argv) {
     else if(s == "-fix") sidetype[sides-1] = 2;
     else if(s == "-draw") ui();
     else if(s == "-export") export_image(next_arg());
+    else if(s == "-hilbert") {
+      int lev = atoi(next_arg());
+      int pix = atoi(next_arg());
+      int border = atoi(next_arg());
+      create_hilbert(lev, pix, border);
+      }
     else die("unrecognized argument\n");
     }
 

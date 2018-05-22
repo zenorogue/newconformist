@@ -71,6 +71,9 @@ Margin is automatically increased if the resulting size is smaller than the curr
 
 `-sb`: save the current boundaries in text format. (*) No way to load this format.
 
+`-hilbert <level> <width> <border>`: create a shape based on the Hilbert curve. Parameters are: the level of the Hilbert curve, width in pixels (including the border), and the width of 
+the border in pixels (on one side). Sample values: `-hilbert 4 32 2`.
+
 `-cm`: compute the mapping.
 
 `-sm <file.map>`: save the current map to a file.
