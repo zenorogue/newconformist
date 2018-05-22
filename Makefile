@@ -2,7 +2,7 @@
 #  // zebra: 6*fivecells
 #  // reptiles: 3*fivecells
 
-nconf: nconf.cpp
+nconf: nconf.cpp mat.cpp zebra.cpp
 	g++ nconf.cpp -o nconf -lgd -lSDL -O3 -std=c++1z
 
 elegant-cat-outside.map: nconf
