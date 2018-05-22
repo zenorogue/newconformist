@@ -374,7 +374,27 @@ void draw(bitmap &b) {
       }
     
     int si = p.side;
-    if(!img[si].s) {
+    if(img_band[si].size()) {
+      ld by = p.x[1];
+      ld bx = p.x[0] - xcenter[si];
+      bx /= cscale[si][0];
+      int sizy = img_band[si][0].s->h;
+      by *= sizy;
+      bx *= sizy;
+      int totalx = 0;
+      for(auto& bandimg: img_band[si]) totalx += bandimg.s->w;
+      bx += totalx/2.;
+      bx -= int(bx) / totalx * totalx;
+      if(bx < 0) bx += totalx;
+      for(auto& bandimg: img_band[si]) { 
+        if(bx < bandimg.s->w) {
+          b[y][x] = bandimg[by][bx];
+          break;
+          }
+        else bx -= bandimg.s->w;
+        }      
+      }
+    else if(!img[si].s) {
       b[y][x] = int(255 & int(256 * pts[y][x].x[0])) + ((255 & int(255 * pts[y][x].x[1])) << 8) + (sides>1 ? (((si * 255) / (sides-1)) << 16) : 0);
       }
     else {
@@ -429,6 +449,10 @@ bool inner(int t) { return t > 0 && t< 4; }
 
 void load_image(const string& fname) {
   img[sides-1] = readPng(fname); 
+  }
+
+void load_image_band(const string& fname) {
+  img_band[sides-1].push_back(readPng(fname));
   }
 
 void measure(int si) {
@@ -515,6 +539,18 @@ int main(int argc, char **argv) {
     else if(s == "-lm") loadmap(next_arg());
     else if(s == "-lm2") loadmap2(next_arg());
     else if(s == "-li") load_image(next_arg());
+    else if(s == "-lband") load_image_band(next_arg());
+    else if(s == "-lbands") {
+      int i0 = atoi(next_arg());
+      int i1 = atoi(next_arg());
+      string s = next_arg();
+      for(int i=i0; i<=i1; i++) {
+        char buf[100000];
+        snprintf(buf, 100000, s.c_str(), i);
+        printf("Loading image #%d: %s\n", i, buf);
+        load_image_band(buf);
+        }
+      }
     else if(s == "-zebra") period_unit[sides-1] = zebra_period, period_matrices[sides-1] = zebra_matrices;
     else if(s == "-period") period[sides-1] = period_unit[sides-1] * atoi(next_arg());
     else if(s == "-fix") sidetype[sides-1] = 2;

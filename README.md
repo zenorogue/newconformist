@@ -79,7 +79,12 @@ Margin is automatically increased if the resulting size is smaller than the curr
 
 `-li <tiling.png>`: tile the current shape with the given hyperbolic tiling. The tiling picture should be in the Poincaré disk model. Pictures generated
 by the "HQ shot" feature in HyperRogue's map editor work well (the periods assume that you have not moved nor rotated the screen). 
-(*) No way to load a tiling in the band model, even though it would be easy to implement.
+
+`-lband <band-image.png>`: tile the current shape with the given image in the band model. Band images exported from HyperRogue work great. Can be used many times to 
+load multiple segments of the same band.
+
+`-lbands <min> <max> <format.png>`: use -lband on a list of files according to the given (printf-style) format. For example, `-lbands 1 11 std%d.png` will load std1.png, std2.png, ...,
+std11.png.
 
 `-zebra`: assume that the tiling is periodic as in HyperRogue's Zebra pattern. This lets newconformist to take advantage of the periodicity and
 map to a point close to the center of the tiling picture.

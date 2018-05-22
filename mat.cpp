@@ -36,6 +36,7 @@ cpoint operator * (cpoint v0, ld d) {
   }
 
 bitmap img[MAXSIDE];
+vector<bitmap> img_band[MAXSIDE];
 cpoint cscale[MAXSIDE];
 ld xcenter[MAXSIDE];
 ld period[MAXSIDE];
