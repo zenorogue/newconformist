@@ -660,7 +660,7 @@ int main(int argc, char **argv) {
       for(auto& bandimg: img_band[si]) totalx += bandimg.s->w;
       int y = img_band[si][0].s->h;
       printf("x = %d y = %d\n", totalx, y);
-      printf("To make a loop, speed times count should be %lf\n", x * 1. / y);
+      printf("To make a loop, speed times count should be %lf\n", totalx * 1. / y);
       }
     else if(s == "-exportv") {
       ld speed = atof(next_arg());

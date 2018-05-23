@@ -76,4 +76,6 @@ draw-hilbert-stdv: nconf
 	mkdir -p frames
 	./nconf \
 	  -lm hilbert-small.map -lbands 1 11 std%d.png  \
-	  -draw -bandlen -exportv 0.4104375 1000 frames/hilbert-frames-%03d.png
+	  -draw -bandlen -exportv 0.20521875 2000 frames/hilbert-frames-%03d.png
+	ffmpeg -framerate 15 -i "frames/hilbert-frames-%03d.png" -f mp4 -vcodec libx264 -r 15 hilbert.mp4
+
