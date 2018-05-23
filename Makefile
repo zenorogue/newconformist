@@ -62,4 +62,18 @@ draw-hilbert-chaos: nconf
 draw-hilbert-std: nconf
 	./nconf \
 	  -lm hilbert.map -lbands 1 11 std%d.png  \
+	  -draw
+
+draw-hilbert-stdx: nconf
+	./nconf \
+	  -lm hilbert.map -lbands 1 11 std%d.png  \
 	  -draw -export hilbert-std.png
+
+hilbert-small.map: nconf
+	./nconf -hilbert 3 64 2 -sb hmap.txt -cm -sm hilbert-small.map
+
+draw-hilbert-stdv: nconf
+	mkdir -p frames
+	./nconf \
+	  -lm hilbert-small.map -lbands 1 11 std%d.png  \
+	  -draw -bandlen -exportv 0.4104375 1000 frames/hilbert-frames-%03d.png

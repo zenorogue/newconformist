@@ -598,6 +598,23 @@ void export_image(const string& fname) {
   writePng(fname.c_str(), b);
   }
 
+void export_video(ld spd, int cnt, const string& fname) {
+  measure_if_needed();
+  bitmap b = emptyBitmap(SX, SY);
+  for(int i=0; i<cnt; i++) {
+    draw(b);
+    for(int y=0; y<SY; y++)
+    for(int x=0; x<SX; x++)
+      b[y][x] |= 0xFF000000;
+    char buf[100000];
+    snprintf(buf, 100000, fname.c_str(), i);
+    writePng(buf, b);
+    printf("Saving: %s\n", buf);
+    for(int i=0; i<sides; i++)
+      xcenter[i] += cscale[i][0] * spd;
+    }
+  }
+
 int main(int argc, char **argv) {
   for(int i=0; i<MAXSIDE; i++)
     period_unit[i] = 1;
@@ -638,6 +655,18 @@ int main(int argc, char **argv) {
     else if(s == "-fix") sidetype[sides-1] = 2;
     else if(s == "-draw") ui();
     else if(s == "-export") export_image(next_arg());
+    else if(s == "-bandlen") {
+      int totalx = 0, si = sides - 1;
+      for(auto& bandimg: img_band[si]) totalx += bandimg.s->w;
+      int y = img_band[si][0].s->h;
+      printf("x = %d y = %d\n", totalx, y);
+      printf("To make a loop, speed times count should be %lf\n", x * 1. / y);
+      }
+    else if(s == "-exportv") {
+      ld speed = atof(next_arg());
+      int cnt = atoi(next_arg());
+      export_video(speed, cnt, next_arg());
+      }
     else if(s == "-hilbert") {
       int lev = atoi(next_arg());
       int pix = atoi(next_arg());
