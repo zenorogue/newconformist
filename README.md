@@ -2,6 +2,10 @@
 Conformally map the hyperbolic plane to arbitrary shapes.
 
 ![sample picture](http://roguetemple.com/z/newconformist/result.png)
+[(twitter link)](https://twitter.com/ZenoRogue/status/989908535818506243)
+
+![sample picture](http://roguetemple.com/z/newconformist/hilbert-std.png)
+[(twitter link)](https://twitter.com/ZenoRogue/status/998967789510643712) [(animated version on YouTube)](https://www.youtube.com/watch?v=vxF8lwa0z3I)
 
 # References
 
