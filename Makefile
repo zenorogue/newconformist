@@ -2,7 +2,7 @@
 #  // zebra: 6*fivecells
 #  // reptiles: 3*fivecells
 
-nconf: nconf.cpp mat.cpp zebra.cpp
+nconf: nconf.cpp mat.cpp zebra.cpp triangle.cpp
 	g++ nconf.cpp -o nconf -lgd -lSDL -O3 -std=c++1z
 
 elegant-cat-outside.map: nconf
@@ -78,4 +78,10 @@ draw-hilbert-stdv: nconf
 	  -lm hilbert-small.map -lbands 1 11 std%d.png  \
 	  -draw -bandlen -exportv 0.20521875 2000 frames/hilbert-frames-%03d.png
 	ffmpeg -framerate 15 -i "frames/hilbert-frames-%03d.png" -f mp4 -vcodec libx264 -r 15 hilbert.mp4
+
+triangle400.map: nconf
+	./nconf -triangle 400 -cm -sm triangle400.map
+
+triangle-earth: nconf
+	./nconf -lm triangle400.map -li earthspin.png -tm -export triangles/tearth.png
 

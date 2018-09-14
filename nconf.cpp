@@ -235,6 +235,8 @@ void saveb(const string& s) {
   fclose(f);
   }
 
+#include "triangle.cpp"
+
 int pointorder(pair<int, int> xy) {
   int x = xy.first, y = xy.second;
   if(x==0 && y==0) return -1;
@@ -435,6 +437,11 @@ cpoint get_conformity(int x, int y) {
 
 void draw(bitmap &b) {
   b.belocked();
+
+  if(triangle_mode)
+    draw_triangle(b);
+  else
+
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
@@ -701,6 +708,11 @@ int main(int argc, char **argv) {
       int border = atoi(next_arg());
       create_hilbert(lev, pix, border);
       }
+    else if(s == "-triangle") {
+      create_triangle(atoi(next_arg()));
+      }
+    else if(s == "-tm")
+      triangle_mode = true;
     else die("unrecognized argument\n");
     }
 
