@@ -6,10 +6,10 @@ nconf: nconf.cpp mat.cpp zebra.cpp triangle.cpp
 	g++ nconf.cpp -o nconf -lgd -lSDL -O3 -std=c++1z
 
 elegant-cat-outside.map: nconf
-	./nconf -bco elegant-cat2.png -cm -sm elegant-cat-outside.map
+	./nconf -cbo elegant-cat2.png -cm -sm elegant-cat-outside.map
 
 elegant-cat-inside.map: nconf
-	./nconf -bci elegant-cat2.png 12 583 750 5 -cm -sm elegant-cat-outside.map
+	./nconf -cbi elegant-cat2.png 12 583 750 5 -cm -sm elegant-cat-outside.map
 
 draw: nconf
 	./nconf \
