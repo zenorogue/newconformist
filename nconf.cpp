@@ -717,7 +717,7 @@ int main(int argc, char **argv) {
       }
     else if(s == "-tm")
       triangle_mode = true;
-    else die("unrecognized argument\n");
+    else die("unrecognized argument: " + s);
     }
 
   return 0;
