@@ -63,7 +63,7 @@ struct bitmap {
     return pixelrow{ptr, s->w};
     }
   ~bitmap() { if(s && !isscreen) SDL_FreeSurface(s); }
-  bitmap& operator= (bitmap&& b) { s = b.s; locked = b.locked; isscreen = b.isscreen; b.s = NULL; }
+  bitmap& operator= (bitmap&& b) { s = b.s; locked = b.locked; isscreen = b.isscreen; b.s = NULL; return *this; }
   bitmap(bitmap&& b) { s = b.s; locked = b.locked; isscreen = b.isscreen; b.s = NULL; }
   bitmap(SDL_Surface *s, bool l, bool is) : s(s), locked(l), isscreen(is) {}
   bitmap() { s = NULL; }
