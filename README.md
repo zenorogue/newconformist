@@ -70,8 +70,8 @@ Margin is automatically increased if the resulting size is smaller than the curr
 (*) It is currently impossible to define both the outer and inner boundary -- the outer boundary will have to be rectangular.
 (*) Newconformist currently chooses the straight line from (0,Y/2) to the center as the cut line -- this assumes that the point (X/2,Y/2) is inside.
 
-`-cbi <shape.png>`: load the shape image and prepare the inside for mapping. 
-(*) There is currently no way to choose the points A and B. The current method is tailored for the cat shape, might not work for other shapes.
+`-cbi <shape.png> x1 y1 x2 y2`: load the shape image and prepare the inside for mapping. The points A and B are the points on the boundary closest to the given coordinates.
+Coordinates are given relative to the original image, i.e., before scaling and adding margins.
 
 `-sb`: save the current boundaries in text format. (*) No way to load this format.
 

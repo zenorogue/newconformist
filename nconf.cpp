@@ -103,11 +103,21 @@ void split_boundary(int ax, int ay, int bx, int by, int d) {
     }
   }
 
-void createb(bool inner, const string& fname) {
-  sides = 1;
-  heart = readPng(fname.c_str());
-  errpixel = heart[0][0];
+tuple<int, int, int> boundary_point_near(int cx, int cy) {
+  ld bestdist = 1e8;
+  int ax, ay, ad;
+    
+  for(int x=1; x<SX-1; x++) for(int y=1; y<SY-1; y++)
+  for(int d=0; d<4; d++)
+    if(pts[y][x].type == 0 && pts[y+dy[d]][x+dx[d]].type == 1) {
+      ld dist = hypot(x-cx, y-cy);
+      if(dist < bestdist) bestdist = dist, ax = x, ay = y, ad = d;
+      }
   
+  return make_tuple(ax, ay, ad);
+  }
+
+void set_SXY(bitmap& heart) {
   int newSX = heart.s->w / scalex + marginx + marginx;
   if(newSX < SX) 
     marginx = (SX - heart.s->w / scalex) / 2;
@@ -119,52 +129,63 @@ void createb(bool inner, const string& fname) {
   else SY = newSY;
 
   resize_pt();
-  sidetype[0] = inner ? 0 : 1;
+  }  
+
+unsigned& get_heart(int x, int y) {
+  return heart[(y-marginy)*scaley][(x-marginx)*scalex];
+  }
+
+void createb_outer(const string& fname) {
+  sides = 1;
+  heart = readPng(fname);
+  errpixel = heart[0][0];
+  set_SXY(heart);
+
+  sidetype[0] = 1;
 
   for(int y=0; y<SY; y++) 
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
     p.side = 0;
-    if(inner) {
-      if(heart[(y-marginy)*scaley][(x-marginx)*scalex] == errpixel)
-        p.type = 0;
-      else
-        p.type = 1;
-      }
-    else {
-      if(x < 1 || y < 1 || x == SX-1 || y == SY-1)
-        p.type = 4;
-      else if(heart[(y-marginy)*scaley][(x-marginx)*scalex] != errpixel)
-        p.type = 5;
-      else if(x > SX/2)
-        p.type = 1;
-      else if(y < SY/2)
-        p.type = 2;
-      else
-        p.type = 3;
-      }
+
+    if(x < 1 || y < 1 || x == SX-1 || y == SY-1)
+      p.type = 4;
+    else if(get_heart(x,y) != errpixel)
+      p.type = 5;
+    else if(x > SX/2)
+      p.type = 1;
+    else if(y < SY/2)
+      p.type = 2;
+    else
+      p.type = 3;
+    }
+  }
+
+void createb_inner(const string& fname, int x1, int y1, int x2, int y2) {
+  sides = 1;
+  heart = readPng(fname);
+  errpixel = heart[0][0];
+  set_SXY(heart);
+  
+  sidetype[0] = 0;
+
+  for(int y=0; y<SY; y++) 
+  for(int x=0; x<SX; x++) {
+    auto& p = pts[y][x];
+    p.side = 0;
+    if(get_heart(x, y) == errpixel)
+      p.type = 0;
+    else
+      p.type = 1;
     }
   
-  if(inner) {
-    int ax, ay;
-    
-    for(int x=0; x<SX; x++) for(int y=0; y<SY; y++)
-      if(pts[y][x].type == 0 && pts[y][x+1].type == 1) {
-        ax = x, ay = y;
-        goto bxy;
-        }
+  auto [ax, ay, ad] = boundary_point_near(x1/scalex+marginx, y1/scaley+marginy);
+  auto [bx, by, bd] = boundary_point_near(x2/scalex+marginx, y2/scaley+marginy);
   
-    bxy:
-    int bx, by;
-    bool first = true;
-    for(int x=1; x<SX; x++) for(int y=0; y<SY; y++)
-      if(pts[y][x].type == 0 && pts[y][x-1].type == 1 && (first || x-y > bx-by)) {
-        bx = x, by = y;
-        first = false;
-        }
-    
-    split_boundary(ax, ay, bx, by, 0);
-    }
+  printf("%d %d %d\n", ax, ay, ad);
+  printf("%d %d %d\n", bx, by, bd);
+  
+  split_boundary(ax, ay, bx, by, bd^2);
   }
 
 // Hilbert curve
@@ -629,8 +650,15 @@ int main(int argc, char **argv) {
       SY = atoi(next_arg());
       createb_rectangle();
       }
-    else if(s == "-cbo") createb(false, next_arg());
-    else if(s == "-cbi") createb(true, next_arg());
+    else if(s == "-cbo") createb_outer(next_arg());
+    else if(s == "-cbi") {
+      string s = next_arg();
+      int x1 = atoi(next_arg());
+      int y1 = atoi(next_arg());
+      int x2 = atoi(next_arg());
+      int y2 = atoi(next_arg());
+      createb_inner(s, x1, y1, x2, y2);
+      }
     else if(s == "-sb") saveb(next_arg());
     else if(s == "-q") draw_progress = false;
     else if(s == "-cm") computemap();
