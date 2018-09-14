@@ -84,6 +84,8 @@ the border in pixels (on one side). Sample values: `-hilbert 4 32 2`.
 
 `-lm <file.map>`: load the previously computed map from a file.
 
+`-lm2 <file.map>`: use both outside and inside map with -lm <outside-file.map> <tiling options...> -lm2 <inside-file.map> <tiling options...>.
+
 `-li <tiling.png>`: tile the current shape with the given hyperbolic tiling. The tiling picture should be in the Poincaré disk model. Pictures generated
 by the "HQ shot" feature in HyperRogue's map editor work well (the periods assume that you have not moved nor rotated the screen). 
 
