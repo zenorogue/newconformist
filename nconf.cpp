@@ -29,6 +29,8 @@
 
 using namespace std;
 
+ld spinspeed;
+
 #define MAXSIDE 16
 
 int SX, SY;
@@ -607,6 +609,7 @@ void ui() {
   break_loop = false;
   while(!break_loop) {
     int t1 = SDL_GetTicks();
+    if(spinspeed) cspin += (t1 - t) * spinspeed;
     for(int i=0; i<sides; i++)
       xcenter[i] += cscale[i][0] * anim_speed * (t1-t) / 1000.;
     t = t1;
@@ -690,6 +693,7 @@ int main(int argc, char **argv) {
     else if(s == "-fix") sidetype[sides-1] = 2;
     else if(s == "-draw") ui();
     else if(s == "-export") export_image(next_arg());
+    else if(s == "-spinspeed") spinspeed = atof(next_arg());
     else if(s == "-bandlen") {
       int totalx = 0, si = sides - 1;
       for(auto& bandimg: img_band[si]) totalx += bandimg.s->w;

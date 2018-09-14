@@ -51,6 +51,10 @@ ld mulnorm(const transmatrix& t, hyperpoint h) {
   return t[6] * h[0] + t[7] * h[1] + t[8] * h[2];
   }
 
+ld mulnorm(const transmatrix& t1, const transmatrix& t2) {
+  return t1[6] * t2[2] + t1[7] * t2[5] + t1[8] * t2[8];
+  }
+
 // Minkowski hyperboloid to Poincare
 
 cpoint hyper_to_disk(hyperpoint p) {
@@ -69,6 +73,15 @@ hyperpoint mul(const transmatrix& t, hyperpoint h) {
   return res;
   }
 
+transmatrix spin(ld alpha) {
+  transmatrix T;
+  for(int i=0; i<9; i++) T[i] = 0;
+  T[0] = +cos(alpha); T[1] = +sin(alpha);
+  T[3] = -sin(alpha); T[4] = +cos(alpha);
+  T[8] = 1;
+  return T;
+  }
+
 transmatrix mul(const transmatrix& t1, const transmatrix& t2) {
   transmatrix res;
   for(int u=0; u<3; u++) for(int v=0; v<3; v++)
@@ -78,15 +91,24 @@ transmatrix mul(const transmatrix& t1, const transmatrix& t2) {
       t1[3*u+2] * t2[6+v];
   return res;
   }
+
+transmatrix xpush(ld alpha) {
+  transmatrix T;
+  for(int i=0; i<9; i++) T[i] = 0;
+  T[0] = +cosh(alpha); T[2] = +sinh(alpha);
+  T[4] = 1;
+  T[6] = +sinh(alpha); T[8] = +cosh(alpha);
+  return T;
+  }
   
 // use periodicity to find the closest copy of the hyperpoint p
-hyperpoint reperiod(hyperpoint p, const vector<transmatrix>& periods) {
+template<class T> T reperiod(T p, const vector<transmatrix>& periods) {
   int iter = 0;
   remap_again:
   iter++; if(iter<30)
   for(auto& z: periods) {
     ld nq = mulnorm(z, p);
-    if(nq < p[2]) {
+    if(nq < p.back()) {
       p = mul(z, p);
       goto remap_again;
       }
@@ -94,6 +116,21 @@ hyperpoint reperiod(hyperpoint p, const vector<transmatrix>& periods) {
   
   return p;
   }
+
+int sig(int a) { return a<2 ? 1 : -1; }
+
+void fixmatrix(transmatrix& T) {
+ for(int x=0; x<3; x++) for(int y=0; y<=x; y++) {
+    ld dp = 0;
+    for(int z=0; z<3; z++) dp += T[z*3+x] * T[z*3+y] * sig(z);
+    
+    if(y == x) dp = 1 - sqrt(sig(x)/dp);
+    
+    for(int z=0; z<3; z++) T[3*z+x] -= dp * T[3*z+y];
+    }
+  }
+
+ld cspin;
 
 cpoint band_to_disk(cpoint c, int si) {
 
@@ -107,18 +144,51 @@ cpoint band_to_disk(cpoint c, int si) {
   x *= M_PI / 2;
 
   y = 2 * atanh(tan(y/2));
-   
-  if(period[si] > 0) {
-    ld d = period[si];
-    while(x > d/2) x -= d;
-    while(x < -d/2) x += d;
+  
+  hyperpoint p;
+  
+  if(cspin == 0) {
+    if(period[si] > 0) {
+      ld d = period[si];
+      while(x > d/2) x -= d;
+      while(x < -d/2) x += d;
+      }
+     
+    p = { sinh(x) * cosh(y), sinh(y), cosh(y) * cosh(x)};
+    
+    p = mul(spin(cspin), p);
+    
+    p = reperiod(p, period_matrices[si]);    
     }
-   
-  hyperpoint p = { sinh(x) * cosh(y), sinh(y), cosh(y) * cosh(x)};
   
-  p = reperiod(p, period_matrices[si]);
+  else {
+  
+    transmatrix M = spin(cspin);
+    
+    while(x > 5) {
+      M = mul(M, xpush(5));
+      fixmatrix(M);
+      M = reperiod(M, period_matrices[si]);
+      x -= 5;
+      }
 
-  cpoint pt = hyper_to_disk(p);
+    while(x < -5) {
+      M = mul(M, xpush(-5));
+      fixmatrix(M);
+      M = reperiod(M, period_matrices[si]);
+      x += 5;
+      }
+
+    M = mul(M, xpush(x));
+
+    p = {0, sinh(y), cosh(y)};
+    p = mul(M, p);
+    /* M = mul(M, spin(-M_PI/2));
+    M = mul(M, xpush(y));
+    p = mul(M, C0); */
+    p = reperiod(p, period_matrices[si]);
+    }
   
+  cpoint pt = hyper_to_disk(p);  
   return (cpoint{1, 1} + pt) * (img[si].s->h / 2);
   }
