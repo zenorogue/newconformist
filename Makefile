@@ -17,6 +17,14 @@ draw: nconf
 	  -lm2 elegant-cat-inside.map -li reptiles.png -zebra -period 3 \
 	  -draw
 
+spintest: nconf
+	./nconf \
+	  -lm elegant-cat-inside.map -li zebrabright.png -zebra -period 6 \
+	  -spinspeed .0000001 -draw
+
+pointtest: nconf
+	./nconf -scale 10 -cbi elegant-cat2.png 80 267 615 292 -sb pointtest.txt
+
 draws: nconf
 	./nconf \
 	  -lm elegant-cat-outside.map \
