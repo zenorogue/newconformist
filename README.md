@@ -20,7 +20,7 @@ how to map to this shape.
 
 The computational aspect of the Riemann's mapping theorem is a well studied problem (see the references in the Wikipedia article above); the algorithm
 used by newconformist is independent of this research, though. We have not compared it to the known algorithms. The inspiration for this project comes
-from the recent rectangular conformal mappings by @ChristopherKing42 (but we do not know what algorithm he has been using).
+from the recent rectangular conformal mappings by @ChristopherKing42 (using the method described [here](https://github.com/zenorogue/newconformist/issues/1)).
 
 Newconformist can also conformally map an annulus to a subset which is homeomorphic to it. This is used to map the outside of the cat in the sample
 image above. (We have not tried to actually prove a version of
