@@ -259,7 +259,7 @@ void createb_inner(int x1, int y1, int x2, int y2) {
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
     p.side = 0;
-    if(get_heart(x, y) == inpixel)
+    if(get_heart(x, y) == inpixel && x && y && x < SX-1 && y < SY-1)
       p.type = 1;
     else
       p.type = 0;
