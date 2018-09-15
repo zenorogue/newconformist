@@ -147,7 +147,6 @@ void split_boundary(int ax, int ay, int bx, int by, int d) {
   bx -= dx[d], by -= dy[d];
   
   for(int iter=0; iter<100000; iter++) {
-    printf("%d %d %d %d\n", bx, by, d, phase);
     d &= 3;
     auto& pt2 = pts[by+dy[d]][bx+dx[d]];
     if(pt2.type == phase+2 || pt2.type == phase) d++;
