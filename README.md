@@ -79,6 +79,7 @@ The (*) signifies options which should be there but are not implemented yet (the
 
 `-margin <margin>`: automatically add margins to the loaded shape images. When `-scale` is given after `-margin`, the margin is scaled too, otherwise it is not scaled.
 Margin is automatically increased if the resulting size is smaller than the current map, so doing `-rectangle` first ensures that a given resolution (or larger) is used.
+Default: 32.
 
 `-mim <shape.png>`: set up an image file for mapping
 
@@ -101,8 +102,7 @@ the border in pixels (on one side). Sample values: `-hilbert 4 32 2`.
 
 `-lm2 <file.map>`: use both outside and inside map with -lm <outside-file.map> <tiling options...> -lm2 <inside-file.map> <tiling options...>.
 
-`-lmjoin <file.map> <x> <y>`: merge a fork given in <file.map>. Coordinates specify the merging point; coordinates in the original image are used as long as -scale and -margin are known
-(i.e., given before in the same call), otherwise use the after-scale coordinates.
+`-lmjoin <file.map> <x> <y>`: merge a fork given in <file.map>. Coordinates specify the merging point; the current values of scale and margin are used to understand ,x> and <y>.
 
 `-back`: the command `-lmjoin` by default merges the last side. This command tells the next `-lmjoin` to use the parent of that side instead. For example, to map a binary three with
 eight leaves A, B, C, D, E, F, G, H, you would write `-lm A -lmjoin B -back -lmjoin C -lmjoin D -back -back -lmjoin E -lmjoin F -back -lmjoin G -lmjoin H -back -back -back` (merging
