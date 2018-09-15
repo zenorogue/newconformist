@@ -121,3 +121,4 @@ void fixmatrix(transmatrix& T) {
     }
   }
 
+template<class T> int isize(const T& t) { return t.size(); }

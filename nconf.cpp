@@ -66,20 +66,22 @@ struct sideinfo {
   ld xcenter;
   ld period;
   ld period_unit;
+  ld animshift;
   vector<transmatrix> period_matrices;
   int type;
   int id;
   int code;
   vector<int> childsides;
-  // for child sides
-  pointmap* submap;
-  int join_x, join_y, parentid;
-  transmatrix matrix;
-  ld shift;
   bool need_btd;
+  vector<transmatrix> matrixlist;
+  ld zero_shift;
+  pointmap* submap;
+  int join_x, join_y, parentid, rootid;
   };
 
 vector<sideinfo> sides;
+
+sideinfo& rootof(const sideinfo& si) { return sides[si.rootid]; }
 
 #include "btd.cpp"
 
@@ -103,6 +105,8 @@ sideinfo& new_side(int type) {
   side.submap = &pts;
   side.period_unit = 1;
   side.parentid = N;
+  side.rootid = N;
+  side.animshift = 0;
   return side;
   }
 
@@ -112,6 +116,9 @@ sideinfo& single_side(int type) {
   current_side = side.id;
   return side;
   }
+
+sideinfo& cside() { return sides[current_side]; }
+sideinfo& csideroot() { return rootof(cside()); }
 
 void createb_rectangle() {
   single_side(0);
@@ -501,7 +508,8 @@ void loadmap_join(const string& fname, int x, int y) {
   
   auto& side = new_side(0);
   side.parentid = current_side;
-  sides[current_side].childsides.push_back(side.id);
+  side.rootid = cside().rootid;
+  cside().childsides.push_back(side.id);
   side.submap = new pointmap;
   side.join_x = x/scalex + marginx;
   side.join_y = y/scaley + marginy;
@@ -549,6 +557,8 @@ cpoint get_conformity(int x, int y, sideinfo& side) {
   return cpoint{good, bad};
   }  
 
+bool mark_sides;
+
 void draw(bitmap &b) {
   construct_btd();
   b.belocked();
@@ -569,6 +579,7 @@ void draw(bitmap &b) {
       }
     
     int siid = p.side;
+    int tsiid = siid;
     if(siid >= size(sides)) continue;
     auto& si = sides[siid];
 
@@ -594,11 +605,17 @@ void draw(bitmap &b) {
       }
     else if(!si.img.s) {
       int qsides = size(sides);
-      b[y][x] = int(255 & int(256 * pts[y][x].x[0])) + ((255 & int(255 * pts[y][x].x[1])) << 8) + (qsides>1 ? (((siid * 255) / (qsides-1)) << 16) : 0);
+      auto& pix = b[y][x];
+      part(pix, 0) = int(255 & int(255 * pts[y][x].x[0]));
+      part(pix, 1) = int(255 & int(255 * pts[y][x].x[1]));
       }
     else {
-      auto dc = band_to_disk(x, y, si);
+      auto dc = band_to_disk(x, y, si, tsiid);
       b[y][x] = si.img[dc[1]][dc[0]];
+      }
+    
+    if(mark_sides) {
+      part(b[y][x], 2) = (part(b[y][x], 2) + 256 * tsiid) / isize(sides);
       }
     }
   b.draw();
@@ -655,11 +672,11 @@ void klawisze() {
 bool inner(int t) { return t > 0 && t< 4; }
 
 void load_image(const string& fname) {
-  sides[current_side].img = readPng(fname); 
+  csideroot().img = readPng(fname); 
   }
 
 void load_image_band(const string& fname) {
-  sides[current_side].img_band.push_back(readPng(fname));
+  csideroot().img_band.push_back(readPng(fname));
   }
 
 bool need_measure = true;
@@ -727,8 +744,11 @@ void ui() {
   while(!break_loop) {
     int t1 = SDL_GetTicks();
     if(spinspeed) cspin += (t1 - t) * spinspeed;
-    for(auto& si: sides) 
-      si.xcenter += si.cscale[0] * anim_speed * (t1-t) / 1000.;
+    for(auto& si: sides) {
+      ld x = si.cscale[0] * anim_speed * (t1-t) / 1000.;
+      si.xcenter += x;
+      si.animshift += x;
+      }
     t = t1;
     
     draw(screen);
@@ -758,8 +778,11 @@ void export_video(ld spd, int cnt, const string& fname) {
     snprintf(buf, 100000, fname.c_str(), i);
     writePng(buf, b);
     printf("Saving: %s\n", buf);
-    for(auto& si: sides) 
-      si.xcenter += si.cscale[0] * spd;
+    for(auto& si: sides) {
+      ld x = si.cscale[0] * spd;
+      si.xcenter += x;
+      si.animshift += x;
+      }
     }
   }
 
@@ -801,7 +824,7 @@ int main(int argc, char **argv) {
       loadmap_join(s, x, y);
       }
     else if(s == "-back") {
-      current_side = sides[current_side].parentid;
+      current_side = cside().parentid;
       }
     else if(s == "-li") load_image(next_arg());
     else if(s == "-lband") load_image_band(next_arg());
@@ -816,14 +839,15 @@ int main(int argc, char **argv) {
         load_image_band(buf);
         }
       }
-    else if(s == "-zebra") sides[current_side].period_unit = zebra_period, sides[current_side].period_matrices = zebra_matrices;
-    else if(s == "-period") sides[current_side].period = sides[current_side].period_unit * atoi(next_arg());
-    else if(s == "-fix") sides[current_side].type = 2;
+    else if(s == "-zebra") csideroot().period_unit = zebra_period, csideroot().period_matrices = zebra_matrices;
+    else if(s == "-period") csideroot().period = csideroot().period_unit * atoi(next_arg());
+    else if(s == "-fix") csideroot().type = 2;
     else if(s == "-draw") ui();
     else if(s == "-export") export_image(next_arg());
     else if(s == "-spinspeed") spinspeed = atof(next_arg());
+    else if(s == "-marksides") mark_sides = true;
     else if(s == "-bandlen") {
-      auto& si = sides[current_side];
+      auto& si = csideroot();
       if(si.img_band.empty()) die("no bands to measure in -bandlen");
       int totalx = 0;
       for(auto& bandimg: si.img_band) totalx += bandimg.s->w;

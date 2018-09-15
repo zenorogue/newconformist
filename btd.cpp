@@ -49,49 +49,49 @@ int debugsi;
 
 bool need_btd;
 
-void shift_on_line(transmatrix& M, ld newx, ld& current_shift, sideinfo& si) {
-  while(newx > current_shift - 5) {
-    M = mul(M, xpush(5));
+transmatrix get_matrix_at(sideinfo& si, ld x) {
+  x -= si.zero_shift;
+  int x0 = int(x);
+  while(isize(si.matrixlist) <= x0) {
+    transmatrix M = mul(si.matrixlist.back(), xpush(1));
     fixmatrix(M);
-    M = reperiod(M, si.period_matrices);
-    current_shift += 5;
+    M = reperiod(M, rootof(si).period_matrices);
+    si.matrixlist.push_back(M);
     }
-
-  while(newx < current_shift + 5) {
-    M = mul(M, xpush(-5));
-    fixmatrix(M);
-    M = reperiod(M, si.period_matrices);
-    current_shift -= 5;
-    }
- 
-  M = mul(M, xpush(newx - current_shift));
-  current_shift = newx;
+  return mul(si.matrixlist[x0], xpush(x - x0));
   }
 
 void construct_btd() {
   for(auto& si: sides) {
-    if(si.parentid != si.id) continue;
-    si.need_btd = (cspin > 0 || si.childsides.size());
     
-    transmatrix M = spin(cspin);
-    ld current_shift = 0;
+    si.matrixlist.clear();
+
+    if(si.parentid == si.id) {
+      si.need_btd = cspin > 0;
+      si.matrixlist.push_back(spin(cspin));
+      si.zero_shift = -si.animshift;
+      }
     
-    for(int subid: si.childsides) {
-      auto& e = sides[subid];
+    else {      
+      auto& root = rootof(si);
+      auto& par = sides[si.parentid];
+      par.need_btd = true;
       
-      int ex = e.join_x, ey = e.join_y;
+      int ex = si.join_x, ey = si.join_y;
+      
+      auto& ppts = *par.submap;
   
-      auto [old_x0, old_y0] = unband(pts[ey][ex].x, si, 0);
-      auto [old_x1, old_y1] = unband(pts[ey][ex+1].x, si, 0);
-      auto [old_x2, old_y2] = unband(pts[ey+1][ex].x, si, 0);
+      auto [old_x0, old_y0] = unband(ppts[ey][ex].x, par, 0);
+      auto [old_x1, old_y1] = unband(ppts[ey][ex+1].x, par, 0);
+      auto [old_x2, old_y2] = unband(ppts[ey+1][ex].x, par, 0);
       
-      auto& epts = *e.submap;
+      auto& epts = *si.submap;
   
-      auto [new_x0, new_y0] = unband(epts[ey][ex].x, e, 0);
-      auto [new_x1, new_y1] = unband(epts[ey][ex+1].x, e, 0);
-      auto [new_x2, new_y2] = unband(epts[ey+1][ex].x, e, 0);
+      auto [new_x0, new_y0] = unband(epts[ey][ex].x, si, 0);
+      auto [new_x1, new_y1] = unband(epts[ey][ex+1].x, si, 0);
+      auto [new_x2, new_y2] = unband(epts[ey+1][ex].x, si, 0);
       
-      shift_on_line(M, old_x0, current_shift, si);
+      transmatrix T = get_matrix_at(par, old_x0);
       
       transmatrix mold, mnew;
       set_column(mold, 0, equirectangular(0, old_y0));
@@ -102,45 +102,46 @@ void construct_btd() {
       set_column(mnew, 1, equirectangular(new_x1 - new_x0, new_y1));
       set_column(mnew, 2, equirectangular(new_x2 - new_x0, new_y2));
         
-      M = mul(mul(M, mold), inverse(mnew));
-      fixmatrix(M);
+      T = mul(T, mul(mold, inverse(mnew)));
+      fixmatrix(T);
       
-      e.matrix = M;
-      e.shift = new_x0;
+      si.matrixlist.push_back(T);
+      si.zero_shift = new_x0;
       }
     }
   }
 
-cpoint band_to_disk(int px, int py, sideinfo& si) {
+cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid) {
 
   cpoint c = pts[py][px].x;
   
   hyperpoint p;
   
   if(si.need_btd) {
+  
+    auto csi = &si;
     
-    auto [x,y] = unband(c, si, 0);
-    ld shift = 0;
-    transmatrix M = spin(cspin);
-
-    for(int subid: si.childsides) {
-      auto& e = sides[subid];
-      auto& epts = *e.submap;
+    auto [x,y] = unband(c, *csi, 0);
     
-      auto [nx, ny] = unband(epts[py][px].x, e, 0);
+    parent_changed:
 
-      if(nx > x) {
-        M = e.matrix;
-        shift = e.shift;
+    for(int subid: csi->childsides) {
+      auto& nsi = sides[subid];
+      auto& epts = *nsi.submap;
+    
+      auto [nx, ny] = unband(epts[py][px].x, nsi, 0);
+
+      if(nx > nsi.zero_shift) {
         x = nx; y = ny;
+        csi = &nsi;
+        goto parent_changed;
         }
       }
     
-    shift_on_line(M, x, shift, si);
-
     p = {0, sinh(y), cosh(y)};
-    p = mul(M, p);
+    p = mul(get_matrix_at(*csi, x), p);
     p = reperiod(p, si.period_matrices);
+    tsiid = csi->id;
     }
   
   else {

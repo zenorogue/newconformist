@@ -42,12 +42,25 @@ solve the system of equations, and find what scaling factor should we use on the
 The system of equations is solved with Gaussian elimination. Eliminating a pixel with k adjacent pixels takes time O(k^2), and makes all the adjacent pixels 
 mutually adjacent. The running time of the algorithm depends on the order of elimination; newconformist tries to choose the order which makes it work fast.
 
-The algoritm works very well with snake-like shapes if the points A and B are chosen to be the ends of the snake. For the cat picture, A and B are the front leg
-and the end of the tail. For tree-like shapes, long "tails" except A and B may be not rendered nicely due to precision errors (the cat's other legs are short
-enough, though).
-
 Outsides are mapped to wrapped bands in the same way. The outside/inside border is mapped to the top/bottom of the band, and the ring is cut across a line --
 for adjacent vertices on the opposite sides of the line, +1/-1 is added to the average.
+
+# Forks
+
+The algoritm works very well with snake-like shapes if the points A and B are chosen to be the ends of the snake. For the cat picture, A and B are the front leg
+and the end of the tail. For forked shapes though, long "tails" except A and B may be not rendered nicely due to precision errors. (This does not yet happen 
+with the cat's other legs, because they are short enough.)
+
+To solve this problem, we can use the following method. Suppose that we are trying to map an Y-shape.
+
+* First, perform mapping with A = bottom end of the Y, B = top left end of the Y.
+* Second, perform mapping with A = bottom end of the Y, B = top right end of the Y.
+* Choose a merging point -- this will be the center of the Y.
+* When rendering the image, assume the first mapping first. Check the band x coordinate according to the second mapping, and compare it with the band x coordinate of the
+merging point. If our x coordinate is greater, this means we should use the second mapping instead. Use the band coordinates of the merging point and adjacent points in both mappings 
+to find a transformation which agrees at these points, and apply this transformation.
+
+This process can be generalized to more forks. We need to perform mapping for any B which is an end, and find merging points for each pair of "adjacent" forks, until we merge everything.
 
 # Sample images
 
@@ -86,6 +99,13 @@ the border in pixels (on one side). Sample values: `-hilbert 4 32 2`.
 `-lm <file.map>`: load the previously computed map from a file.
 
 `-lm2 <file.map>`: use both outside and inside map with -lm <outside-file.map> <tiling options...> -lm2 <inside-file.map> <tiling options...>.
+
+`-lmjoin <file.map> <x> <y>`: merge a fork given in <file.map>. Coordinates specify the merging point; coordinates in the original image are used as long as -scale and -margin are known
+(i.e., given before in the same call), otherwise use the after-scale coordinates.
+
+`-back`: the command `-lmjoin` by default merges the last side. This command tells the next `-lmjoin` to use the parent of that side instead. For example, to map a binary three with
+eight leaves A, B, C, D, E, F, G, H, you would write `-lm A -lmjoin B -back -lmjoin C -lmjoin D -back -back -lmjoin E -lmjoin F -back -lmjoin G -lmjoin H -back -back -back` (merging
+points omitted for clarity).
 
 `-li <tiling.png>`: tile the current shape with the given hyperbolic tiling. The tiling picture should be in the Poincaré disk model. Pictures generated
 by the "HQ shot" feature in HyperRogue's map editor work well (the periods assume that you have not moved nor rotated the screen). 
