@@ -131,7 +131,7 @@ cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid) {
     
       auto [nx, ny] = unband(epts[py][px].x, nsi, 0);
 
-      if(nx > nsi.zero_shift) {
+      if(nx > nsi.zero_shift + 2) {
         x = nx; y = ny;
         csi = &nsi;
         goto parent_changed;

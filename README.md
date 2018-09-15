@@ -57,7 +57,7 @@ To solve this problem, we can use the following method. Suppose that we are tryi
 * Second, perform mapping with A = bottom end of the Y, B = top right end of the Y.
 * Choose a merging point -- this will be the center of the Y.
 * When rendering the image, assume the first mapping first. Check the band x coordinate according to the second mapping, and compare it with the band x coordinate of the
-merging point. If our x coordinate is greater, this means we should use the second mapping instead. Use the band coordinates of the merging point and adjacent points in both mappings 
+merging point. If our x coordinate is greater (at least by 2), this means we should use the second mapping instead. Use the band coordinates of the merging point and adjacent points in both mappings 
 to find a transformation which agrees at these points, and apply this transformation.
 
 This process can be generalized to more forks. We need to perform mapping for any B which is an end, and find merging points for each pair of "adjacent" forks, until we merge everything.
