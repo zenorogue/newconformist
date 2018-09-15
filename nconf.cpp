@@ -186,6 +186,7 @@ void set_SXY(bitmap& heart) {
 
 void load_image_for_mapping(const string& fname) {
   heart = readPng(fname);
+  errpixel = heart[0][0];
   set_SXY(heart);
   }
 
