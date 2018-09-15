@@ -5,6 +5,9 @@
 nconf: nconf.cpp mat.cpp zebra.cpp triangle.cpp btd.cpp
 	g++ nconf.cpp -o nconf -lgd -lSDL -O3 -std=c++1z
 
+nconf-debug: nconf.cpp mat.cpp zebra.cpp triangle.cpp btd.cpp
+	g++ nconf.cpp -o nconf-debug -lgd -lSDL -g -std=c++1z
+
 elegant-cat-outside.map: nconf
 	./nconf -cbo elegant-cat2.png -cm -sm elegant-cat-outside.map
 
