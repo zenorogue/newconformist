@@ -66,8 +66,8 @@ triskeleo3.map: nconf
 
 drawt12o: nconf
 	./nconf \
-	  -lm triskele1.map -li rlyeh.png -zebra -period 6 -lmj triskele2.map 562 584 \
-	  -lm2 triskeleo.map -li windy.png -zebra -period 6 -fix \
+	  -lm triskele1.map -li windy.png -zebra -period 6 -lmj triskele2.map 562 584 -ash 0.4 \
+	  -lm2 triskeleo.map -li rlyeh.png -zebra -period 6 -fix \
 	  -lmj triskeleo1.map 244 469 -back \
 	  -lmj triskeleo2.map 828 376 -back \
 	  -lmj triskeleo3.map 600 936 -back \

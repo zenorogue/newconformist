@@ -730,7 +730,7 @@ void measure(sideinfo& si) {
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) if(gpts[y][x].side == sii) if(inner(gpts[y][x].type)) xes.push_back(gpts[y][x].x[0]);
   sort(xes.begin(), xes.end());
-  si.xcenter = xes[size(xes) / 2];
+  si.xcenter = xes[size(xes) / 2] + si.animshift;
   printf("xcenter: %Lf\n", si.xcenter);
 
   if(si.type && si.period > 0) {
@@ -865,6 +865,7 @@ int main(int argc, char **argv) {
     else if(s == "-zebra") csideroot().period_unit = zebra_period, csideroot().period_matrices = zebra_matrices;
     else if(s == "-period") csideroot().period = csideroot().period_unit * atoi(next_arg());
     else if(s == "-fix") csideroot().type = 2;
+    else if(s == "-ash") csideroot().animshift += atof(next_arg());
     else if(s == "-draw") ui();
     else if(s == "-export") export_image(next_arg());
     else if(s == "-spinspeed") spinspeed = atof(next_arg());
