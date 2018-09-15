@@ -570,6 +570,8 @@ cpoint get_conformity(int x, int y, sideinfo& side) {
 
 bool mark_sides, no_images;
 
+int notypeside = 0xFFD500;
+
 void draw(bitmap &b) {
   construct_btd();
   b.belocked();
@@ -585,7 +587,7 @@ void draw(bitmap &b) {
     if(y == SY/3 && x == SX/8) { b[y][x] = 0xFFD500; continue; }
 
     if(p.type == 0) {
-      b[y][x] = 0xFFD500;
+      b[y][x] = notypeside;
       continue;
       }
     
@@ -882,6 +884,12 @@ int main(int argc, char **argv) {
       ld speed = atof(next_arg());
       int cnt = atoi(next_arg());
       export_video(speed, cnt, next_arg());
+      }
+    else if(s == "-ntsblack") {
+      notypeside = 0;
+      }
+    else if(s == "-ntswhite") {
+      notypeside = 0xFFFFFF;
       }
     else if(s == "-hilbert") {
       int lev = atoi(next_arg());
