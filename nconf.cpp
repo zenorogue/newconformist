@@ -584,8 +584,6 @@ void draw(bitmap &b) {
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
 
-    if(y == SY/3 && x == SX/8) { b[y][x] = 0xFFD500; continue; }
-
     if(p.type == 0) {
       b[y][x] = notypeside;
       continue;
