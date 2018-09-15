@@ -61,6 +61,7 @@ merging point. If our x coordinate is greater, this means we should use the seco
 to find a transformation which agrees at these points, and apply this transformation.
 
 This process can be generalized to more forks. We need to perform mapping for any B which is an end, and find merging points for each pair of "adjacent" forks, until we merge everything.
+It needs quite a lot of manual assembly to find the coordinates of all the endpoints and merging points, though.
 
 # Sample images
 
