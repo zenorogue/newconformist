@@ -1,6 +1,5 @@
 void create_triangle(int edgelength) {
-  sides = 1;
-  sidetype[0] = 0;
+  single_side(0);
   SX = edgelength * 3;
   SY = int(edgelength * sqrt(3));
   int base = SY * 3 / 4;
@@ -32,12 +31,12 @@ bool mirror(double& dx, double& dy, double ax, double ay, double cx, double cy) 
 
 bool triangle_mode;
 
-cpoint band_to_disk_basic(cpoint c, int si) {
+cpoint band_to_disk_basic(cpoint c, sideinfo& si) {
   ld y = c[1];
-  ld x = c[0] - xcenter[si];
+  ld x = c[0] - si.xcenter;
   
   y *= 2; y -= 1; // -1 .. 1
-  x *= 2; x /= cscale[si][0];
+  x *= 2; x /= si.cscale[0];
 
   y *= M_PI / 2;
   x *= M_PI / 2;
@@ -69,7 +68,7 @@ void draw_triangle(bitmap& b) {
     auto& p = pts[dy][dx];    
     // printf("=> done %d\n", p.type);
     if(p.type != 1) continue;
-    int si = p.side;    
+    auto& si = sides[p.side];
     auto dc = band_to_disk_basic(p.x, si);
     ld longitude = atan2(dc[1], dc[0]);
     ld r2 = (dc|dc);
@@ -84,12 +83,14 @@ void draw_triangle(bitmap& b) {
     while(longitude < 0) longitude += 2 * M_PI;
     while(longitude >= 2 * M_PI) longitude -= 2 * M_PI;
     
-    int ax = img[si].s->w * longitude / 2 / M_PI;
-    int ay = img[si].s->h * (latitude + M_PI/2) / M_PI;
+    auto& img = si.img;
+    
+    int ax = img.s->w * longitude / 2 / M_PI;
+    int ay = img.s->h * (latitude + M_PI/2) / M_PI;
     // ay %= img[si].s->h; if(ay < 0) ay += img[si].s->h;
     
     // b[y][x] = latitude * 60 + 128 + (int(longitude * 40) << 8); //  
-    b[y][x] = img[si][ay][ax];
+    b[y][x] = img[ay][ax];
     }    
   b.draw();
   printf("draw\n");

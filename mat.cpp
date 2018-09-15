@@ -35,15 +35,6 @@ cpoint operator * (cpoint v0, ld d) {
   return cpoint{v0[0]*d, v0[1]*d};
   }
 
-bitmap img[MAXSIDE];
-vector<bitmap> img_band[MAXSIDE];
-cpoint cscale[MAXSIDE];
-ld xcenter[MAXSIDE];
-ld period[MAXSIDE];
-ld period_unit[MAXSIDE];
-vector<transmatrix> period_matrices[MAXSIDE];
-int sidetype[MAXSIDE];
-
 // the cosh of the distance of a hyperpoint h from the central point equals h[2]
 // this function computes the cosh of distance of t*h
 

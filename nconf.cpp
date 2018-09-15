@@ -32,8 +32,6 @@ using namespace std;
 
 ld spinspeed;
 
-#define MAXSIDE 16
-
 #include "mat.cpp"
 #include "zebra.cpp"
 
@@ -43,8 +41,6 @@ int dx[4] = {1, 0, -1, 0};
 int dy[4] = {0, -1, 0, 1};
 
 void resize_pt();
-
-int sides = 1;
 
 bool draw_progress = true;
 
@@ -63,14 +59,27 @@ typedef vector<vector<datapoint>> pointmap;
 
 pointmap pts;
 
-struct joinmap {
-  pointmap epts;
-  int x, y, sideid, parentid;
+struct sideinfo {
+  bitmap img;
+  vector<bitmap> img_band;
+  cpoint cscale;
+  ld xcenter;
+  ld period;
+  ld period_unit;
+  vector<transmatrix> period_matrices;
+  int type;
+  int id;
+  int code;
+  vector<int> childsides;
+  // for child sides
+  pointmap* submap;
+  int join_x, join_y, parentid;
   transmatrix matrix;
   ld shift;
+  bool need_btd;
   };
 
-vector<joinmap> extrapts;
+vector<sideinfo> sides;
 
 #include "btd.cpp"
 
@@ -82,8 +91,30 @@ void resize_pt() {
   for(int y=0; y<SY; y++) pts[y].resize(SX);
   }
 
+int current_side;
+
+sideinfo& new_side(int type) {
+  int N = size(sides);
+  sides.emplace_back();
+  auto& side = sides.back();
+  side.id = N;
+  side.code = N;
+  side.type = type;
+  side.submap = &pts;
+  side.period_unit = 1;
+  side.parentid = N;
+  return side;
+  }
+
+sideinfo& single_side(int type) {
+  sides.clear();
+  auto& side = new_side(type);
+  current_side = side.id;
+  return side;
+  }
+
 void createb_rectangle() {
-  sides = 1;
+  single_side(0);
   resize_pt();
   for(int y=0; y<SY; y++) 
   for(int x=0; x<SX; x++) {
@@ -157,11 +188,10 @@ unsigned& get_heart(int x, int y) {
   }
 
 void createb_outer(int cx, int cy) {
-  sides = 1;
+  single_side(1);
+  
   auto inpixel = get_heart(cx, cy);
 
-  sidetype[0] = 1;
-  
   queue<pair<int, int> > boundary;
   
   while(cx < SX && get_heart(cx, cy) == inpixel) cx++;
@@ -212,13 +242,12 @@ void createb_outer(int cx, int cy) {
   }
 
 void createb_inner(int x1, int y1, int x2, int y2) {
-  sides = 1;
+  single_side(0);
+
   auto inpixel = get_heart(x1, y1);
   printf("%x %x\n", inpixel, get_heart(x2, y2));
   if(get_heart(x2, y2) != inpixel) die("both pixels should be in");
   
-  sidetype[0] = 0;
-
   for(int y=0; y<SY; y++) 
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
@@ -241,8 +270,8 @@ void createb_inner(int x1, int y1, int x2, int y2) {
 // Hilbert curve
 
 void create_hilbert(int lev, int pix, int border) {
-  sides = 1;
-  sidetype[0] = 0;
+  single_side(0);
+
   SY = SX = pix << lev;
   resize_pt();
   for(int y=0; y<SY; y++) 
@@ -425,8 +454,8 @@ void savemap(const string& fname) {
   }
 
 void loadmap(const string& fname) {
-  sides = 1;
-  sidetype[0] = 0;
+  auto& side = single_side(0);
+
   FILE *f = fopen(fname.c_str(), "rb");
   if(!f) pdie("loadmap");
   fread(&SX, sizeof(SX), 1, f);
@@ -437,14 +466,14 @@ void loadmap(const string& fname) {
     auto& p = pts[y][x];
     fread(&p.x, sizeof(p.x), 1, f);
     fread(&p.type, sizeof(p.type), 1, f);
-    if(p.type == 2) sidetype[0] = 1;
+    if(p.type == 2) side.type = 1;
     p.side = 0;
     }
   fclose(f);
   }
 
 void loadmap2(const string& fname) {
-  sidetype[sides] = 0;
+  auto& side = new_side(0);
   FILE *f = fopen(fname.c_str(), "rb");
   if(!f) pdie("loadmap2");
   int iSX, iSY;
@@ -457,24 +486,28 @@ void loadmap2(const string& fname) {
     fread(&dp.x, sizeof(dp.x), 1, f);
     fread(&dp.type, sizeof(dp.type), 1, f);
     if(dp.type < 4 && dp.type > 0) {
-      dp.side = sides;
+      dp.side = side.code;
       pts[y][x] = dp;
-      if(dp.type == 2) sidetype[sides] = 1;
+      if(dp.type == 2) side.type = 1;
       }
     }
   fclose(f);
-  sides++;
+  current_side = side.id; 
   }
 
 void loadmap_join(const string& fname, int x, int y) {
   FILE *f = fopen(fname.c_str(), "rb");
   if(!f) pdie("loadmap_join");
   
-  extrapts.emplace_back();
-  auto &epts = extrapts.back().epts;
-  extrapts.back().x = x/scalex + marginx;
-  extrapts.back().y = y/scaley + marginy;
-  
+  auto& side = new_side(0);
+  side.parentid = current_side;
+  sides[current_side].childsides.push_back(side.id);
+  side.submap = new pointmap;
+  side.join_x = x/scalex + marginx;
+  side.join_y = y/scaley + marginy;
+  side.code = 0;
+  auto &epts = *side.submap;
+    
   int iSX, iSY;
   fread(&iSX, sizeof(iSX), 1, f);
   fread(&iSY, sizeof(iSY), 1, f);
@@ -492,14 +525,15 @@ void loadmap_join(const string& fname, int x, int y) {
     }
 
   fclose(f);
-  extrapts.back().parentid = sides-1;
-  extrapts.back().sideid = sides++;
+  current_side = side.id; 
   }
 
 // how should be linearly transform the current harmonic mapping to make it conformal
 // ([1] should be 0 and is ignored, we only have to scale the x coordinate by multiplying
 // by get_conformity(...)[0]))
-cpoint get_conformity(int x, int y, pointmap& gpts) {
+cpoint get_conformity(int x, int y, sideinfo& side) {
+
+  auto& gpts = *side.submap;
   
   auto vzero = gpts[y][x].x;
   array<cpoint, 2> v = {gpts[y][x+1].x - vzero, gpts[y+1][x].x - vzero };
@@ -534,43 +568,37 @@ void draw(bitmap &b) {
       continue;
       }
     
-    int si = p.side;
-    if(img_band[si].size()) {
+    int siid = p.side;
+    if(siid >= size(sides)) continue;
+    auto& si = sides[siid];
+
+    if(si.img_band.size()) {
       ld by = p.x[1];
-      ld bx = p.x[0] - xcenter[si];
-      bx /= cscale[si][0];
-      int sizy = img_band[si][0].s->h;
+      ld bx = p.x[0] - si.xcenter;
+      bx /= si.cscale[0];
+      int sizy = si.img_band[0].s->h;
       by *= sizy;
       bx *= sizy;
       int totalx = 0;
-      for(auto& bandimg: img_band[si]) totalx += bandimg.s->w;
+      for(auto& bandimg: si.img_band) totalx += bandimg.s->w;
       bx += totalx/2.;
       bx -= int(bx) / totalx * totalx;
       if(bx < 0) bx += totalx;
-      for(auto& bandimg: img_band[si]) { 
+      for(auto& bandimg: si.img_band) { 
         if(bx < bandimg.s->w) {
           b[y][x] = bandimg[by][bx];
           break;
           }
         else bx -= bandimg.s->w;
-        }      
+        }
       }
-    else if(!img[si].s) {
-      b[y][x] = int(255 & int(256 * pts[y][x].x[0])) + ((255 & int(255 * pts[y][x].x[1])) << 8) + (sides>1 ? (((si * 255) / (sides-1)) << 16) : 0);
+    else if(!si.img.s) {
+      int qsides = size(sides);
+      b[y][x] = int(255 & int(256 * pts[y][x].x[0])) + ((255 & int(255 * pts[y][x].x[1])) << 8) + (qsides>1 ? (((siid * 255) / (qsides-1)) << 16) : 0);
       }
     else {
       auto dc = band_to_disk(x, y, si);
-      b[y][x] = img[si][dc[1]][dc[0]];
-      if(debugsi) b[y][x] ^= 0x4000;
-      /*
-      LOAD BAND
-      auto by = int(p.x[1] * imgb.s->h);
-      auto bx = int(p.x[0] / cscale[0] * imgb.s->h);
-      bx %= imgb.s->w;
-      if(bx<0) bx += imgb.s->w;
-      
-      b[y][x] = imgb[by][bx];
-      */
+      b[y][x] = si.img[dc[1]][dc[0]];
       }
     }
   b.draw();
@@ -627,62 +655,59 @@ void klawisze() {
 bool inner(int t) { return t > 0 && t< 4; }
 
 void load_image(const string& fname) {
-  img[sides-1] = readPng(fname); 
+  sides[current_side].img = readPng(fname); 
   }
 
 void load_image_band(const string& fname) {
-  img_band[sides-1].push_back(readPng(fname));
+  sides[current_side].img_band.push_back(readPng(fname));
   }
 
 bool need_measure = true;
 
-void measure(int si) {
+void measure(sideinfo& si) {
+  
+  int sii = si.code;
+  auto& gpts = *si.submap;  
+
   vector<ld> cscs[2];
-  int sii = si;
-  auto xpts = &pts;
   
-  for(auto& ep: extrapts) if(ep.sideid == si)
-    sii = ep.parentid, xpts = &ep.epts;
-  
-  auto& gpts = *xpts;
-  
-  printf("side #%d (%d), type %d, %x\n", si, sidetype[si], sii, xpts);
+  printf("side #%d (%d), code %d, %x\n", si.id, si.type, sii, &gpts);
   
   printf("%lf %lf\n", (double)gpts[SY/3][SX/8].x[0], (double)gpts[SY/3][SX/8].x[1]);
   
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) if(gpts[y][x].side == sii) if(inner(gpts[y][x].type) && gpts[y+1][x].side == sii && inner(gpts[y+1][x].type) && gpts[y][x+1].side == sii && inner(gpts[y][x+1].type)) {
-    auto c = get_conformity(x, y, gpts);
+    auto c = get_conformity(x, y, si);
     for(int i: {0,1}) cscs[i].push_back(c[i]);
     }
   
   for(int i: {0,1}) sort(cscs[i].begin(), cscs[i].end());  
   int q = size(cscs[0]);
   
-  cscale[si] = { cscs[0][q/2], cscs[1][q/2] };
+  si.cscale = { cscs[0][q/2], cscs[1][q/2] };
   
   for(int i=0; i<=16; i++) {
     int id = (q * i) / 16;
     printf("%Lf %Lf\n", cscs[0][id], cscs[1][id]);
     }
 
-  printf("conformity: %Lf %Lf (%d points)\n", cscale[si][0], cscale[si][1], q);
+  printf("conformity: %Lf %Lf (%d points)\n", si.cscale[0], si.cscale[1], q);
   
   vector<ld> xes;
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) if(gpts[y][x].side == sii) if(inner(gpts[y][x].type)) xes.push_back(gpts[y][x].x[0]);
   sort(xes.begin(), xes.end());
-  xcenter[si] = xes[size(xes) / 2];
-  printf("xcenter: %Lf\n", xcenter[si]);
+  si.xcenter = xes[size(xes) / 2];
+  printf("xcenter: %Lf\n", si.xcenter);
 
-  if(sidetype[si] && period[si] > 0) {
-    printf("period multiple: %Lf\n", M_PI / cscale[si][0] / period[si]);
+  if(si.type && si.period > 0) {
+    printf("period multiple: %Lf\n", M_PI / si.cscale[0] / si.period);
   
-    if(sidetype[si] == 2) {
-      ld pmul = M_PI / cscale[si][0] / period[si];
+    if(si.type == 2) {
+      ld pmul = M_PI / si.cscale[0] / si.period;
       pmul = int(pmul + .5);
-      cscale[si][0] = M_PI / period[si] / pmul;
-      printf("fixed period multiple: %Lf\n", M_PI / cscale[si][0] / period[si]);    
+      si.cscale[0] = M_PI / si.period / pmul;
+      printf("fixed period multiple: %Lf\n", M_PI / si.cscale[0] / si.period);
       }
     }
   }
@@ -690,7 +715,7 @@ void measure(int si) {
 void measure_if_needed() {
   if(need_measure) {
     need_measure = false;
-    for(int si=0; si<sides; si++) measure(si);
+    for(auto& si: sides) measure(si);
     }
   }
 
@@ -702,8 +727,8 @@ void ui() {
   while(!break_loop) {
     int t1 = SDL_GetTicks();
     if(spinspeed) cspin += (t1 - t) * spinspeed;
-    for(int i=0; i<sides; i++)
-      xcenter[i] += cscale[i][0] * anim_speed * (t1-t) / 1000.;
+    for(auto& si: sides) 
+      si.xcenter += si.cscale[0] * anim_speed * (t1-t) / 1000.;
     t = t1;
     
     draw(screen);
@@ -733,14 +758,12 @@ void export_video(ld spd, int cnt, const string& fname) {
     snprintf(buf, 100000, fname.c_str(), i);
     writePng(buf, b);
     printf("Saving: %s\n", buf);
-    for(int i=0; i<sides; i++)
-      xcenter[i] += cscale[i][0] * spd;
+    for(auto& si: sides) 
+      si.xcenter += si.cscale[0] * spd;
     }
   }
 
 int main(int argc, char **argv) {
-  for(int i=0; i<MAXSIDE; i++)
-    period_unit[i] = 1;
   int i = 1;
   auto next_arg = [&] () { if(i == argc) die("not enough arguments"); return argv[i++]; };
   while(i < argc) {
@@ -777,6 +800,9 @@ int main(int argc, char **argv) {
       int y = atoi(next_arg());
       loadmap_join(s, x, y);
       }
+    else if(s == "-back") {
+      current_side = sides[current_side].parentid;
+      }
     else if(s == "-li") load_image(next_arg());
     else if(s == "-lband") load_image_band(next_arg());
     else if(s == "-lbands") {
@@ -790,16 +816,18 @@ int main(int argc, char **argv) {
         load_image_band(buf);
         }
       }
-    else if(s == "-zebra") period_unit[sides-1] = zebra_period, period_matrices[sides-1] = zebra_matrices;
-    else if(s == "-period") period[sides-1] = period_unit[sides-1] * atoi(next_arg());
-    else if(s == "-fix") sidetype[sides-1] = 2;
+    else if(s == "-zebra") sides[current_side].period_unit = zebra_period, sides[current_side].period_matrices = zebra_matrices;
+    else if(s == "-period") sides[current_side].period = sides[current_side].period_unit * atoi(next_arg());
+    else if(s == "-fix") sides[current_side].type = 2;
     else if(s == "-draw") ui();
     else if(s == "-export") export_image(next_arg());
     else if(s == "-spinspeed") spinspeed = atof(next_arg());
     else if(s == "-bandlen") {
-      int totalx = 0, si = sides - 1;
-      for(auto& bandimg: img_band[si]) totalx += bandimg.s->w;
-      int y = img_band[si][0].s->h;
+      auto& si = sides[current_side];
+      if(si.img_band.empty()) die("no bands to measure in -bandlen");
+      int totalx = 0;
+      for(auto& bandimg: si.img_band) totalx += bandimg.s->w;
+      int y = si.img_band[0].s->h;
       printf("x = %d y = %d\n", totalx, y);
       printf("To make a loop, speed times count should be %lf\n", totalx * 1. / y);
       }
