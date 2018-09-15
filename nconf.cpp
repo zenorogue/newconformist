@@ -188,6 +188,15 @@ void load_image_for_mapping(const string& fname) {
   set_SXY(heart);
   }
 
+int trim_x1 = 0, trim_y1 = 0, trim_x2 = 99999, trim_y2 = 99999;
+
+void trim(int x1, int y1, int x2, int y2) {
+  trim_x1 = x1;
+  trim_y1 = y1;
+  trim_x2 = x2;
+  trim_y2 = y2;
+  }
+
 unsigned& get_heart(int x, int y) {
   return heart[(y-marginy)*scaley][(x-marginx)*scalex];
   }
@@ -256,8 +265,13 @@ void createb_inner(int x1, int y1, int x2, int y2) {
   for(int y=0; y<SY; y++) 
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
+
+    int ax = (x-marginx)/scalex;
+    int ay = (y-marginy)/scaley;
+    bool trimmed = ax < trim_x1 || ax >= trim_x2 || ay < trim_y1 || ay >= trim_y2;
+
     p.side = 0;
-    if(get_heart(x, y) == inpixel && x && y && x < SX-1 && y < SY-1)
+    if(get_heart(x, y) == inpixel && x && y && x < SX-1 && y < SY-1 && !trimmed)
       p.type = 1;
     else
       p.type = 0;
@@ -800,6 +814,13 @@ int main(int argc, char **argv) {
       int x = atoi(next_arg());
       int y = atoi(next_arg());
       createb_outer(x, y);
+      }
+    else if(s == "-trim") {
+      int x1 = atoi(next_arg());
+      int y1 = atoi(next_arg());
+      int x2 = atoi(next_arg());
+      int y2 = atoi(next_arg());
+      trim(x1, y1, x2, y2);
       }
     else if(s == "-cbi") {
       int x1 = atoi(next_arg());
