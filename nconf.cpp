@@ -251,8 +251,8 @@ void createb_outer(int cx, int cy) {
 void createb_inner(int x1, int y1, int x2, int y2) {
   single_side(0);
 
-  auto inpixel = get_heart(x1, y1);
-  printf("%x %x\n", inpixel, get_heart(x2, y2));
+  auto inpixel = heart[y1][x1];
+  printf("%x %x\n", inpixel, heart[y2][x2]);
   if(get_heart(x2, y2) != inpixel) die("both pixels should be in");
   
   for(int y=0; y<SY; y++) 
