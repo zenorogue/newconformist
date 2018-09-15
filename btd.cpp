@@ -136,7 +136,7 @@ void construct_btd() {
     }
   }
 
-cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid) {
+cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& yval) {
 
   cpoint c = pts[py][px].x;
   
@@ -169,6 +169,7 @@ cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid) {
     p = mul(get_matrix_at(*csi, x), p);
     p = reperiod(p, si.period_matrices);
     tsiid = csi->id;
+    yval = y;
     }
   
   else {
@@ -186,6 +187,7 @@ cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid) {
     p = mul(spin(cspin), p);
     
     p = reperiod(p, si.period_matrices);
+    yval = y;
     }
   
   cpoint pt = hyper_to_disk(p);  

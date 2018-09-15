@@ -571,6 +571,7 @@ cpoint get_conformity(int x, int y, sideinfo& side) {
 bool mark_sides, no_images;
 
 int notypeside = 0xFFD500;
+int boundary_color = 0xFFFFFF;
 
 void draw(bitmap &b) {
   construct_btd();
@@ -621,8 +622,12 @@ void draw(bitmap &b) {
       part(pix, 1) = int(255 & int(255 * pts[y][x].x[1]));
       }
     else {
-      auto dc = band_to_disk(x, y, si, tsiid);
-      b[y][x] = si.img[dc[1]][dc[0]];
+      ld yval = 0;
+      auto dc = band_to_disk(x, y, si, tsiid, yval);
+      if(yval >= 10 || yval <= -10)
+        b[y][x] = boundary_color;
+      else
+        b[y][x] = si.img[dc[1]][dc[0]];
       }
     
     if(mark_sides) {
@@ -889,6 +894,12 @@ int main(int argc, char **argv) {
       }
     else if(s == "-ntswhite") {
       notypeside = 0xFFFFFF;
+      }
+    else if(s == "-btblack") {
+      boundary_color = 0;
+      }
+    else if(s == "-btwhite") {
+      boundary_color = 0xFFFFFF;
       }
     else if(s == "-hilbert") {
       int lev = atoi(next_arg());
