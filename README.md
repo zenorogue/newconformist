@@ -7,6 +7,8 @@ Conformally map the hyperbolic plane to arbitrary shapes.
 ![sample picture](http://roguetemple.com/z/newconformist/hilbert-std.png)
 [(twitter link)](https://twitter.com/ZenoRogue/status/998967789510643712) [(animated version on YouTube)](https://www.youtube.com/watch?v=vxF8lwa0z3I)
 
+![forked shape](http://roguetemple.com/z/newconformist/triskele-textured.png)
+
 # References
 
 Play the tutorial in [HyperRogue](http://roguetemple.com/z/hyper) as an introduction to hyperbolic geometry.
