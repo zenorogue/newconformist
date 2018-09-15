@@ -568,7 +568,7 @@ cpoint get_conformity(int x, int y, sideinfo& side) {
   return cpoint{good, bad};
   }  
 
-bool mark_sides;
+bool mark_sides, no_images;
 
 void draw(bitmap &b) {
   construct_btd();
@@ -594,7 +594,7 @@ void draw(bitmap &b) {
     if(siid >= size(sides)) continue;
     auto& si = sides[siid];
 
-    if(si.img_band.size()) {
+    if(si.img_band.size() && !no_images) {
       ld by = p.x[1];
       ld bx = p.x[0] - si.xcenter;
       bx /= si.cscale[0];
@@ -614,7 +614,7 @@ void draw(bitmap &b) {
         else bx -= bandimg.s->w;
         }
       }
-    else if(!si.img.s) {
+    else if(no_images || !si.img.s) {
       int qsides = size(sides);
       auto& pix = b[y][x];
       part(pix, 0) = int(255 & int(255 * pts[y][x].x[0]));
@@ -626,9 +626,12 @@ void draw(bitmap &b) {
       }
     
     if(mark_sides) {
-      part(b[y][x], 2) = (part(b[y][x], 2) + 256 * tsiid) / isize(sides);
+      part(b[y][x], 2) = part(b[y][x], 2) * 14 / 16 + tsiid * 32 / isize(sides);
       }
     }
+
+  if(mark_sides)
+    for(auto& si: sides) b[si.join_y][si.join_x] = rand();
   b.draw();
   }
 
@@ -671,6 +674,8 @@ void klawisze() {
       if(key == '0') anim_speed = 0;
       if(key == 'r') anim_speed = -anim_speed;
       
+      if(key == 'm') mark_sides = !mark_sides;
+      if(key == 'c') no_images = !no_images;
       if(key == 'q') 
         break_loop = true;
       
