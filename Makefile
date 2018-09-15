@@ -46,6 +46,33 @@ drawe2: nconf
 drawe12: nconf
 	./nconf -lm e1.map -li zebrabright.png -zebra -period 6 -lmj e2.map 166 485 -draw
 
+triskele1.map: nconf triskele.png
+	./nconf -mim triskele-flat.png -cbi 296 777 855 742 -cm -sm triskele1.map
+
+triskele2.map: nconf triskele.png
+	./nconf -mim triskele-flat.png -cbi 296 777 548 268 -cm -sm triskele2.map
+
+triskeleo.map: nconf
+	./nconf -mim triskele-flat.png -cbo 120 270 -cm -sm triskeleo.map
+
+triskeleo1.map: nconf
+	./nconf -mim triskele-flat.png -trim -9999 -9999 600 9999 -cbi 50 50 282 707 -cm -sm triskeleo1.map
+
+triskeleo2.map: nconf
+	./nconf -mim triskele-flat.png -trim 250 -9999 9999 700 -cbi 260 50 579 289 -cm -sm triskeleo2.map
+
+triskeleo3.map: nconf
+	./nconf -mim triskele-flat.png -trim -9999 500 9999 9999 -cbi 50 550 774 777 -cm -sm triskeleo3.map
+
+drawt12o: nconf
+	./nconf \
+	  -lm triskele1.map -li rlyeh.png -zebra -period 6 -lmj triskele2.map 562 584 \
+	  -lm2 triskeleo.map -li windy.png -zebra -period 6 -fix \
+	  -lmj triskeleo1.map 244 469 -back \
+	  -lmj triskeleo2.map 828 376 -back \
+	  -lmj triskeleo3.map 600 936 -back \
+	  -ntsblack -draw
+
 draws: nconf
 	./nconf \
 	  -lm elegant-cat-outside.map \

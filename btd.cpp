@@ -51,20 +51,45 @@ bool need_btd;
 
 transmatrix get_matrix_at(sideinfo& si, ld x) {
   x -= si.zero_shift;
+
+  if(si.type == 2) {
+    ld d = si.period;
+    x -= si.xcenter / si.cscale[0];
+    while(x > d/2) x -= d;
+    while(x < -d/2) x += d;
+    return mul(si.matrixlist[0], xpush(x));
+    }     
+
   int x0 = int(x);
-  while(isize(si.matrixlist) <= x0) {
-    transmatrix M = mul(si.matrixlist.back(), xpush(1));
-    fixmatrix(M);
-    M = reperiod(M, rootof(si).period_matrices);
-    si.matrixlist.push_back(M);
+  if(x0 >= 0) {
+    while(isize(si.matrixlist) <= x0) {
+      transmatrix M = mul(si.matrixlist.back(), xpush(1));
+      fixmatrix(M);
+      M = reperiod(M, rootof(si).period_matrices);
+      si.matrixlist.push_back(M);
+      }
+    return mul(si.matrixlist[x0], xpush(x - x0));
     }
-  return mul(si.matrixlist[x0], xpush(x - x0));
+  else {
+    if(si.rmatrixlist.empty()) si.rmatrixlist.push_back(si.matrixlist[0]);
+    x0 = -x0;
+    while(isize(si.rmatrixlist) <= x0) {
+      transmatrix M = mul(si.rmatrixlist.back(), xpush(-1));
+      fixmatrix(M);
+      M = reperiod(M, rootof(si).period_matrices);
+      si.rmatrixlist.push_back(M);
+      }
+    return mul(si.rmatrixlist[x0], xpush(x + x0));
+    }
   }
 
 void construct_btd() {
+  static int p;
+  p++;
   for(auto& si: sides) {
     
     si.matrixlist.clear();
+    si.rmatrixlist.clear();
 
     if(si.parentid == si.id) {
       si.need_btd = cspin > 0;
@@ -128,9 +153,11 @@ cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid) {
     for(int subid: csi->childsides) {
       auto& nsi = sides[subid];
       auto& epts = *nsi.submap;
+      
+      if(epts[py][px].type != 1) continue;
     
       auto [nx, ny] = unband(epts[py][px].x, nsi, 0);
-
+      
       if(nx > nsi.zero_shift + 2) {
         x = nx; y = ny;
         csi = &nsi;

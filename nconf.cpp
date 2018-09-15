@@ -70,10 +70,9 @@ struct sideinfo {
   vector<transmatrix> period_matrices;
   int type;
   int id;
-  int code;
   vector<int> childsides;
   bool need_btd;
-  vector<transmatrix> matrixlist;
+  vector<transmatrix> matrixlist, rmatrixlist;
   ld zero_shift;
   pointmap* submap;
   int join_x, join_y, parentid, rootid;
@@ -100,7 +99,6 @@ sideinfo& new_side(int type) {
   sides.emplace_back();
   auto& side = sides.back();
   side.id = N;
-  side.code = N;
   side.type = type;
   side.submap = &pts;
   side.period_unit = 1;
@@ -493,7 +491,7 @@ void loadmap2(const string& fname) {
     fread(&dp.x, sizeof(dp.x), 1, f);
     fread(&dp.type, sizeof(dp.type), 1, f);
     if(dp.type < 4 && dp.type > 0) {
-      dp.side = side.code;
+      dp.side = side.id;
       pts[y][x] = dp;
       if(dp.type == 2) side.type = 1;
       }
@@ -513,7 +511,6 @@ void loadmap_join(const string& fname, int x, int y) {
   side.submap = new pointmap;
   side.join_x = x/scalex + marginx;
   side.join_y = y/scaley + marginy;
-  side.code = 0;
   auto &epts = *side.submap;
     
   int iSX, iSY;
@@ -529,7 +526,7 @@ void loadmap_join(const string& fname, int x, int y) {
     auto& p = epts[y][x];
     fread(&p.x, sizeof(p.x), 1, f);
     fread(&p.type, sizeof(p.type), 1, f);
-    p.side = 0;
+    p.side = side.id;
     }
 
   fclose(f);
@@ -683,18 +680,18 @@ bool need_measure = true;
 
 void measure(sideinfo& si) {
   
-  int sii = si.code;
+  int sii = si.id;
   auto& gpts = *si.submap;  
 
   vector<ld> cscs[2];
   
-  printf("side #%d (%d), code %d, %x\n", si.id, si.type, sii, &gpts);
-  
-  printf("%lf %lf\n", (double)gpts[SY/3][SX/8].x[0], (double)gpts[SY/3][SX/8].x[1]);
+  printf("side #%d (type %d), x %p\n", si.id, si.type, &gpts);
   
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) if(gpts[y][x].side == sii) if(inner(gpts[y][x].type) && gpts[y+1][x].side == sii && inner(gpts[y+1][x].type) && gpts[y][x+1].side == sii && inner(gpts[y][x+1].type)) {
     auto c = get_conformity(x, y, si);
+    if(isnan(c[0])) continue;
+    if(isnan(c[1])) continue;
     for(int i: {0,1}) cscs[i].push_back(c[i]);
     }
   
@@ -705,7 +702,7 @@ void measure(sideinfo& si) {
   
   for(int i=0; i<=16; i++) {
     int id = (q * i) / 16;
-    printf("%Lf %Lf\n", cscs[0][id], cscs[1][id]);
+    printf("[%2d] %Lf %Lf\n", i, cscs[0][id], cscs[1][id]);
     }
 
   printf("conformity: %Lf %Lf (%d points)\n", si.cscale[0], si.cscale[1], q);
