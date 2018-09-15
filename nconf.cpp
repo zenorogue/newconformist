@@ -33,15 +33,15 @@ ld spinspeed;
 
 #define MAXSIDE 16
 
+#include "mat.cpp"
+#include "zebra.cpp"
+
 int SX, SY;
 
 int dx[4] = {1, 0, -1, 0};
 int dy[4] = {0, -1, 0, 1};
 
 void resize_pt();
-
-#include "mat.cpp"
-#include "zebra.cpp"
 
 int sides = 1;
 
@@ -58,7 +58,20 @@ struct datapoint {
   unordered_map<datapoint*, ld> eqs;
   };
 
-vector<vector<datapoint>> pts;
+typedef vector<vector<datapoint>> pointmap;
+
+pointmap pts;
+
+struct joinmap {
+  pointmap epts;
+  int x, y, sideid, parentid;
+  transmatrix matrix;
+  ld shift;
+  };
+
+vector<joinmap> extrapts;
+
+#include "btd.cpp"
 
 ld scalex = 1, scaley = 1;
 int marginx = 32, marginy = 32;
@@ -418,13 +431,43 @@ void loadmap2(const string& fname) {
   sides++;
   }
 
+void loadmap_join(const string& fname, int x, int y) {
+  FILE *f = fopen(fname.c_str(), "rb");
+  if(!f) pdie("loadmap_join");
+  
+  extrapts.emplace_back();
+  auto &epts = extrapts.back().epts;
+  extrapts.back().x = x;
+  extrapts.back().y = y;
+  
+  int iSX, iSY;
+  fread(&iSX, sizeof(iSX), 1, f);
+  fread(&iSY, sizeof(iSY), 1, f);
+  if(iSX != SX || iSY != SY) die("map size mismatch\n");
+
+  epts.resize(SY);
+  for(int y=0; y<SY; y++) epts[y].resize(SX);
+
+  for(int y=0; y<SY; y++)
+  for(int x=0; x<SX; x++) {
+    auto& p = epts[y][x];
+    fread(&p.x, sizeof(p.x), 1, f);
+    fread(&p.type, sizeof(p.type), 1, f);
+    p.side = 0;
+    }
+
+  fclose(f);
+  extrapts.back().parentid = sides-1;
+  extrapts.back().sideid = sides++;
+  }
+
 // how should be linearly transform the current harmonic mapping to make it conformal
 // ([1] should be 0 and is ignored, we only have to scale the x coordinate by multiplying
 // by get_conformity(...)[0]))
-cpoint get_conformity(int x, int y) {
+cpoint get_conformity(int x, int y, pointmap& gpts) {
   
-  auto vzero = pts[y][x].x;
-  array<cpoint, 2> v = {pts[y][x+1].x - vzero, pts[y+1][x].x - vzero };
+  auto vzero = gpts[y][x].x;
+  array<cpoint, 2> v = {gpts[y][x+1].x - vzero, gpts[y+1][x].x - vzero };
   
   ld det = v[0] ^ v[1];
   
@@ -438,6 +481,7 @@ cpoint get_conformity(int x, int y) {
   }  
 
 void draw(bitmap &b) {
+  construct_btd();
   b.belocked();
 
   if(triangle_mode)
@@ -447,6 +491,9 @@ void draw(bitmap &b) {
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
+
+    if(y == SY/3 && x == SX/8) { b[y][x] = 0xFFD500; continue; }
+
     if(p.type == 0) {
       b[y][x] = 0xFFD500;
       continue;
@@ -477,8 +524,9 @@ void draw(bitmap &b) {
       b[y][x] = int(255 & int(256 * pts[y][x].x[0])) + ((255 & int(255 * pts[y][x].x[1])) << 8) + (sides>1 ? (((si * 255) / (sides-1)) << 16) : 0);
       }
     else {
-      auto dc = band_to_disk(p.x, si);
+      auto dc = band_to_disk(x, y, si);
       b[y][x] = img[si][dc[1]][dc[0]];
+      if(debugsi) b[y][x] ^= 0x4000;
       /*
       LOAD BAND
       auto by = int(p.x[1] * imgb.s->h);
@@ -555,12 +603,21 @@ bool need_measure = true;
 
 void measure(int si) {
   vector<ld> cscs[2];
+  int sii = si;
+  auto xpts = &pts;
   
-  printf("side #%d, type %d\n", si, sidetype[si]);
+  for(auto& ep: extrapts) if(ep.sideid == si)
+    sii = ep.parentid, xpts = &ep.epts;
+  
+  auto& gpts = *xpts;
+  
+  printf("side #%d (%d), type %d, %x\n", si, sidetype[si], sii, xpts);
+  
+  printf("%lf %lf\n", (double)gpts[SY/3][SX/8].x[0], (double)gpts[SY/3][SX/8].x[1]);
   
   for(int y=0; y<SY; y++)
-  for(int x=0; x<SX; x++) if(pts[y][x].side == si) if(inner(pts[y][x].type) && pts[y+1][x].side == si && inner(pts[y+1][x].type) && pts[y][x+1].side == si && inner(pts[y][x+1].type)) {
-    auto c = get_conformity(x, y);
+  for(int x=0; x<SX; x++) if(gpts[y][x].side == sii) if(inner(gpts[y][x].type) && gpts[y+1][x].side == sii && inner(gpts[y+1][x].type) && gpts[y][x+1].side == sii && inner(gpts[y][x+1].type)) {
+    auto c = get_conformity(x, y, gpts);
     for(int i: {0,1}) cscs[i].push_back(c[i]);
     }
   
@@ -578,7 +635,7 @@ void measure(int si) {
   
   vector<ld> xes;
   for(int y=0; y<SY; y++)
-  for(int x=0; x<SX; x++) if(pts[y][x].side == si) if(inner(pts[y][x].type)) xes.push_back(pts[y][x].x[0]);
+  for(int x=0; x<SX; x++) if(gpts[y][x].side == sii) if(inner(gpts[y][x].type)) xes.push_back(gpts[y][x].x[0]);
   sort(xes.begin(), xes.end());
   xcenter[si] = xes[size(xes) / 2];
   printf("xcenter: %Lf\n", xcenter[si]);
@@ -675,6 +732,12 @@ int main(int argc, char **argv) {
     else if(s == "-sm") savemap(next_arg());
     else if(s == "-lm") loadmap(next_arg());
     else if(s == "-lm2") loadmap2(next_arg());
+    else if(s == "-lmj") {
+      string s = next_arg();
+      int x = atoi(next_arg());
+      int y = atoi(next_arg());
+      loadmap_join(s, x, y);
+      }
     else if(s == "-li") load_image(next_arg());
     else if(s == "-lband") load_image_band(next_arg());
     else if(s == "-lbands") {

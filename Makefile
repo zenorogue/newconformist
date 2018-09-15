@@ -2,7 +2,7 @@
 #  // zebra: 6*fivecells
 #  // reptiles: 3*fivecells
 
-nconf: nconf.cpp mat.cpp zebra.cpp triangle.cpp
+nconf: nconf.cpp mat.cpp zebra.cpp triangle.cpp btd.cpp
 	g++ nconf.cpp -o nconf -lgd -lSDL -O3 -std=c++1z
 
 elegant-cat-outside.map: nconf
@@ -24,6 +24,21 @@ spintest: nconf
 
 pointtest: nconf
 	./nconf -scale 10 -cbi elegant-cat2.png 80 267 615 292 -sb pointtest.txt
+
+e1.map: nconf
+	./nconf -cbi letter-e.png 570 418 573 73 -cm -sm e1.map
+
+e2.map: nconf
+	./nconf -cbi letter-e.png 570 418 585 812 -cm -sm e2.map
+
+drawe1: nconf
+	./nconf -lm e1.map -li zebrabright.png -zebra -period 6 -draw
+
+drawe2: nconf
+	./nconf -lm e2.map -li zebrabright.png -zebra -period 6 -draw
+
+drawe12: nconf
+	./nconf -lm e1.map -li zebrabright.png -zebra -period 6 -lmj e2.map 97 410 -draw
 
 draws: nconf
 	./nconf \
