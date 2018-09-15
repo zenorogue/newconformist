@@ -9,10 +9,10 @@ nconf-debug: nconf.cpp mat.cpp zebra.cpp triangle.cpp btd.cpp
 	g++ nconf.cpp -o nconf-debug -lgd -lSDL -g -std=c++1z
 
 elegant-cat-outside.map: nconf
-	./nconf -cbo elegant-cat2.png -cm -sm elegant-cat-outside.map
+	./nconf -mim elegant-cat2.png -cbo 17 335 -cm -sm elegant-cat-outside.map
 
 elegant-cat-inside.map: nconf
-	./nconf -cbi elegant-cat2.png 12 583 750 5 -cm -sm elegant-cat-outside.map
+	./nconf -mim elegant-cat2.png -cbi 22 570 738 17 -cm -sm elegant-cat-outside.map
 
 draw: nconf
 	./nconf \
@@ -25,23 +25,26 @@ spintest: nconf
 	  -lm elegant-cat-inside.map -li zebrabright.png -zebra -period 6 \
 	  -spinspeed .0000001 -draw
 
-pointtest: nconf
-	./nconf -scale 10 -cbi elegant-cat2.png 80 267 615 292 -sb pointtest.txt
+e1.map: nconf letter-e.png
+	./nconf -mim letter-e.png -cbi 516 487 522 225 -cm -sm e1.map
 
-e1.map: nconf
-	./nconf -cbi letter-e.png 570 418 573 73 -cm -sm e1.map
+e2.map: nconf letter-e.png
+	./nconf -mim letter-e.png -cbi 516 487 520 800 -cm -sm e2.map
 
-e2.map: nconf
-	./nconf -cbi letter-e.png 570 418 585 812 -cm -sm e2.map
+d.map: nconf letter-d.png
+	./nconf -mim letter-d.png -cbo 120 500 -cm -sm d.map
 
 drawe1: nconf
 	./nconf -lm e1.map -li zebrabright.png -zebra -period 6 -draw
+
+drawd: nconf
+	./nconf -lm d.map -li zebrabright.png -zebra -period 6 -fix -draw
 
 drawe2: nconf
 	./nconf -lm e2.map -li zebrabright.png -zebra -period 6 -draw
 
 drawe12: nconf
-	./nconf -lm e1.map -li zebrabright.png -zebra -period 6 -lmj e2.map 97 410 -draw
+	./nconf -lm e1.map -li zebrabright.png -zebra -period 6 -lmj e2.map 166 485 -draw
 
 draws: nconf
 	./nconf \

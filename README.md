@@ -66,14 +66,15 @@ The (*) signifies options which should be there but are not implemented yet (the
 `-margin <margin>`: automatically add margins to the loaded shape images. When `-scale` is given after `-margin`, the margin is scaled too, otherwise it is not scaled.
 Margin is automatically increased if the resulting size is smaller than the current map, so doing `-rectangle` first ensures that a given resolution (or larger) is used.
 
-`-cbo <shape.png>`: load the shape image and prepare the outside for mapping. Pixels with the same color as the top left corner are considered to be outside.
-(*) It is currently impossible to define both the outer and inner boundary -- the outer boundary will have to be rectangular.
-(*) Newconformist currently chooses the straight line from (0,Y/2) to the center as the cut line -- this assumes that the point (X/2,Y/2) is inside.
+`-mim <shape.png>`: set up an image file for mapping
 
-`-cbi <shape.png> x1 y1 x2 y2`: load the shape image and prepare the inside for mapping. The points A and B are the points on the boundary closest to the given coordinates.
+`-cbo <x> <y>`: prepare the outside of the image specified with `-mim` for mapping. Pixels with the same color as (x,y) are considered to be outside. The given coordinates need to
+be straight to the left from the inner hole. Coordinates are given relative to the original image, i.e., before scaling and adding margins.
+
+`-cbi <shape.png> <x1> <y1> <x2> <y2>`: prepare the inside of the image specified with `-mim` for mapping. The points A and B are the points on the boundary closest to the given coordinates.
 Coordinates are given relative to the original image, i.e., before scaling and adding margins.
 
-`-sb`: save the current boundaries in text format. (*) No way to load this format.
+`-sb <file>`: save the current boundaries in text format. (*) No way to load this format.
 
 `-hilbert <level> <width> <border>`: create a shape based on the Hilbert curve. Parameters are: the level of the Hilbert curve, width in pixels (including the border), and the width of 
 the border in pixels (on one side). Sample values: `-hilbert 4 32 2`.

@@ -26,6 +26,7 @@
 #include <string>
 #include <algorithm>
 #include <functional>
+#include <queue>
 
 using namespace std;
 
@@ -146,41 +147,75 @@ void set_SXY(bitmap& heart) {
   resize_pt();
   }  
 
+void load_image_for_mapping(const string& fname) {
+  heart = readPng(fname);
+  set_SXY(heart);
+  }
+
 unsigned& get_heart(int x, int y) {
   return heart[(y-marginy)*scaley][(x-marginx)*scalex];
   }
 
-void createb_outer(const string& fname) {
+void createb_outer(int cx, int cy) {
   sides = 1;
-  heart = readPng(fname);
-  errpixel = heart[0][0];
-  set_SXY(heart);
+  auto inpixel = get_heart(cx, cy);
 
   sidetype[0] = 1;
-
+  
+  queue<pair<int, int> > boundary;
+  
+  while(cx < SX && get_heart(cx, cy) == inpixel) cx++;
+  if(cx == SX) die("nothing on the line");
+  
   for(int y=0; y<SY; y++) 
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
     p.side = 0;
 
-    if(x < 1 || y < 1 || x == SX-1 || y == SY-1)
+    if(x == 0) {
       p.type = 4;
-    else if(get_heart(x,y) != errpixel)
+      boundary.emplace(1, y);
+      }
+    else if(y == 0) {
+      p.type = 4;
+      boundary.emplace(x, 1);
+      }
+    else if(x == SX-1) {
+      p.type = 4;
+      boundary.emplace(x-1, 1);
+      }
+    else if(y == SY-1) {
+      p.type = 4;
+      boundary.emplace(1, y-1);
+      }
+    else if(get_heart(x,y) != inpixel)
       p.type = 5;
-    else if(x > SX/2)
+    else if(x > cx)
       p.type = 1;
-    else if(y < SY/2)
+    else if(y < cy)
       p.type = 2;
     else
       p.type = 3;
     }
+  
+  while(!boundary.empty()) {
+    auto [x, y] = boundary.front();
+    boundary.pop();
+    auto& p = pts[y][x];
+    if(p.type != 5) continue;
+    p.type = 4;
+    boundary.emplace(x+1, y);
+    boundary.emplace(x-1, y);
+    boundary.emplace(x, y+1);
+    boundary.emplace(x, y-1);
+    }
   }
 
-void createb_inner(const string& fname, int x1, int y1, int x2, int y2) {
+void createb_inner(int x1, int y1, int x2, int y2) {
   sides = 1;
-  heart = readPng(fname);
-  errpixel = heart[0][0];
-  set_SXY(heart);
+  auto inpixel = get_heart(x1, y1);
+  printf("%x %x\n", inpixel, get_heart(x2, y2));
+  if(get_heart(x2, y2) != inpixel) die("both pixels should be in");
   
   sidetype[0] = 0;
 
@@ -188,10 +223,10 @@ void createb_inner(const string& fname, int x1, int y1, int x2, int y2) {
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
     p.side = 0;
-    if(get_heart(x, y) == errpixel)
-      p.type = 0;
-    else
+    if(get_heart(x, y) == inpixel)
       p.type = 1;
+    else
+      p.type = 0;
     }
   
   auto [ax, ay, ad] = boundary_point_near(x1/scalex+marginx, y1/scaley+marginy);
@@ -437,8 +472,8 @@ void loadmap_join(const string& fname, int x, int y) {
   
   extrapts.emplace_back();
   auto &epts = extrapts.back().epts;
-  extrapts.back().x = x;
-  extrapts.back().y = y;
+  extrapts.back().x = x/scalex + marginx;
+  extrapts.back().y = y/scaley + marginy;
   
   int iSX, iSY;
   fread(&iSX, sizeof(iSX), 1, f);
@@ -717,14 +752,18 @@ int main(int argc, char **argv) {
       SY = atoi(next_arg());
       createb_rectangle();
       }
-    else if(s == "-cbo") createb_outer(next_arg());
+    else if(s == "-mim") load_image_for_mapping(next_arg());
+    else if(s == "-cbo") {
+      int x = atoi(next_arg());
+      int y = atoi(next_arg());
+      createb_outer(x, y);
+      }
     else if(s == "-cbi") {
-      string s = next_arg();
       int x1 = atoi(next_arg());
       int y1 = atoi(next_arg());
       int x2 = atoi(next_arg());
       int y2 = atoi(next_arg());
-      createb_inner(s, x1, y1, x2, y2);
+      createb_inner(x1, y1, x2, y2);
       }
     else if(s == "-sb") saveb(next_arg());
     else if(s == "-q") draw_progress = false;
