@@ -37,8 +37,7 @@ ld spinspeed;
 
 int SX, SY;
 
-int dx[4] = {1, 0, -1, 0};
-int dy[4] = {0, -1, 0, 1};
+ipoint dv[4] = { ipoint(1, 0), ipoint(0, -1), ipoint(-1, 0), ipoint(0, 1) };  
 
 void resize_pt();
 
@@ -55,7 +54,13 @@ struct datapoint {
   unordered_map<datapoint*, ld> eqs;
   };
 
-typedef vector<vector<datapoint>> pointmap;
+template<class T> struct vector2 : vector<vector<T>> {
+  T& operator [] (ipoint i) { return (*this)[i.y][i.x]; }
+  vector<T>& operator [] (int i) { return (*(vector<vector<T>>*)this) [i]; }
+  // const T& operator [] const (ipoint i) { return arr[i.y][i.x]; }  
+  };
+
+typedef vector2<datapoint> pointmap;
 
 pointmap pts;
 
@@ -75,7 +80,8 @@ struct sideinfo {
   vector<transmatrix> matrixlist, rmatrixlist;
   ld zero_shift;
   pointmap* submap;
-  int join_x, join_y, parentid, rootid;
+  ipoint join;
+  int parentid, rootid;
   };
 
 vector<sideinfo> sides;
@@ -135,37 +141,42 @@ void createb_rectangle() {
     }
   }
 
-void split_boundary(int ax, int ay, int bx, int by, int d) {
+void split_boundary(ipoint axy, ipoint bxy, int d) {
 
-  pts[ay][ax].type = 6;
+  pts[axy].type = 6;
 
   int phase = 5;
 
-  pts[by][bx].type = 7;
-  bx -= dx[d], by -= dy[d];
+  pts[bxy].type = 7;
+  bxy -= dv[d];
   
   for(int iter=0; iter<100000; iter++) {
     d &= 3;
-    auto& pt2 = pts[by+dy[d]][bx+dx[d]];
+    auto& pt2 = pts[bxy + dv[d]];
     if(pt2.type == phase+2 || pt2.type == phase) d++;
     else if(pt2.type == 0) { pt2.type = phase; d++; }
     else if(pt2.type == 6 || pt2.type == 7) { phase--; if(phase == 3) break; }
-    else if(pt2.type == 1) { by += dy[d]; bx += dx[d]; d--; }
+    else if(pt2.type == 1) { bxy += dv[d]; d--; }
     }
   }
 
-tuple<int, int, int> boundary_point_near(int cx, int cy) {
+ld hypot(ipoint a) { return hypot(a.x, a.y); }
+
+tuple<ipoint, int> boundary_point_near(ipoint cxy) {
   ld bestdist = 1e8;
-  int ax, ay, ad;
+  int ad;
+  ipoint axy;
     
-  for(int x=1; x<SX-1; x++) for(int y=1; y<SY-1; y++)
-  for(int d=0; d<4; d++)
-    if(pts[y][x].type == 0 && pts[y+dy[d]][x+dx[d]].type == 1) {
-      ld dist = hypot(x-cx, y-cy);
-      if(dist < bestdist) bestdist = dist, ax = x, ay = y, ad = d;
-      }
+  for(int x=1; x<SX-1; x++) for(int y=1; y<SY-1; y++) {
+    ipoint xy(x, y);
+    for(int d=0; d<4; d++)
+      if(pts[xy].type == 0 && pts[xy + dv[d]].type == 1) {
+        ld dist = hypot(xy-cxy);
+        if(dist < bestdist) bestdist = dist, axy = xy, ad = d;
+        }
+    }
   
-  return make_tuple(ax, ay, ad);
+  return make_tuple(axy, ad);
   }
 
 void set_SXY(bitmap& heart) {
@@ -197,22 +208,31 @@ void trim(int x1, int y1, int x2, int y2) {
   trim_y2 = y2;
   }
 
-unsigned& get_heart(int x, int y) {
-  return heart[(y-marginy)*scaley][(x-marginx)*scalex];
+ipoint unmargin(ipoint xy) {
+  return ipoint((xy.y-marginy)*scaley, (xy.x-marginx)*scalex);
   }
 
-void createb_outer(int cx, int cy) {
+ipoint addmargin(ipoint xy) {
+  return ipoint(xy.x/scalex+marginx, xy.y/scaley+marginy);
+  }
+
+unsigned& get_heart(ipoint xy) {
+  return heart[unmargin(xy)];
+  }
+
+void createb_outer(ipoint cxy) {
   single_side(1);
   
-  auto inpixel = get_heart(cx, cy);
+  auto inpixel = get_heart(cxy);
 
-  queue<pair<int, int> > boundary;
+  queue<ipoint> boundary;
   
-  while(cx < SX && get_heart(cx, cy) == inpixel) cx++;
-  if(cx == SX) die("nothing on the line");
+  while(cxy.x < SX && get_heart(cxy) == inpixel) cxy.x++;
+  if(cxy.x == SX) die("nothing on the line");
   
   for(int y=0; y<SY; y++) 
   for(int x=0; x<SX; x++) {
+    ipoint xy(x, y);
     auto& p = pts[y][x];
     p.side = 0;
 
@@ -232,58 +252,54 @@ void createb_outer(int cx, int cy) {
       p.type = 4;
       boundary.emplace(1, y-1);
       }
-    else if(get_heart(x,y) != inpixel)
+    else if(get_heart(xy) != inpixel)
       p.type = 5;
-    else if(x > cx)
+    else if(x > cxy.x)
       p.type = 1;
-    else if(y < cy)
+    else if(y < cxy.y)
       p.type = 2;
     else
       p.type = 3;
     }
   
   while(!boundary.empty()) {
-    auto [x, y] = boundary.front();
+    auto xy = boundary.front();
     boundary.pop();
-    auto& p = pts[y][x];
+    auto& p = pts[xy];
     if(p.type != 5) continue;
     p.type = 4;
-    boundary.emplace(x+1, y);
-    boundary.emplace(x-1, y);
-    boundary.emplace(x, y+1);
-    boundary.emplace(x, y-1);
+    for(int d=0; d<4; d++)
+      boundary.emplace(xy + dv[d]);
     }
   }
 
-void createb_inner(int x1, int y1, int x2, int y2) {
+void createb_inner(ipoint axy, ipoint bxy) {
   single_side(0);
 
-  auto inpixel = heart[y1][x1];
-  printf("%x %x err %x\n", inpixel, heart[y2][x2], errpixel);
-  if(heart[y2][x2] != inpixel) die("both pixels should be in");
+  auto inpixel = heart[axy];
+  printf("%x %x err %x\n", inpixel, heart[bxy], errpixel);
+  if(heart[bxy] != inpixel) die("both pixels should be in");
   
   for(int y=0; y<SY; y++) 
   for(int x=0; x<SX; x++) {
-    auto& p = pts[y][x];
+    auto xy = ipoint(x, y);
+    auto& p = pts[xy];
 
     int ax = (x-marginx)/scalex;
     int ay = (y-marginy)/scaley;
     bool trimmed = ax < trim_x1 || ax >= trim_x2 || ay < trim_y1 || ay >= trim_y2;
 
     p.side = 0;
-    if(get_heart(x, y) == inpixel && x && y && x < SX-1 && y < SY-1 && !trimmed)
+    if(get_heart(xy) == inpixel && x && y && x < SX-1 && y < SY-1 && !trimmed)
       p.type = 1;
     else
       p.type = 0;
     }
   
-  auto [ax, ay, ad] = boundary_point_near(x1/scalex+marginx, y1/scaley+marginy);
-  auto [bx, by, bd] = boundary_point_near(x2/scalex+marginx, y2/scaley+marginy);
+  auto [axy1, ad] = boundary_point_near(addmargin(axy));
+  auto [bxy1, bd] = boundary_point_near(addmargin(bxy));
   
-  printf("%d %d %d\n", ax, ay, ad);
-  printf("%d %d %d\n", bx, by, bd);
-  
-  split_boundary(ax, ay, bx, by, bd^2);
+  split_boundary(axy1, bxy1, bd^2);
   }
 
 // Hilbert curve
@@ -297,14 +313,13 @@ void create_hilbert(int lev, int pix, int border) {
   for(int x=0; x<SX; x++) 
     pts[y][x].side = 0, 
     pts[y][x].type = 0;
-  int wx=0, wy=0;
+  ipoint wxy(0, 0);
   auto connection = [&] (int dir) {
-    printf("%d %d %d\n", wx, wy, dir);
+    printf("%d %d %d\n", wxy.x, wxy.y, dir);
     for(int dy=(dir==1?-border:border); dy<(dir==3?pix+border:pix-border); dy++)
     for(int dx=(dir==2?-border:border); dx<(dir==0?pix+border:pix-border); dx++)
-      pts[dy+wy*pix][dx+wx*pix].type = 1;
-    if(dir<4) 
-      wx += dx[dir], wy += dy[dir];      
+      pts[dy+wxy.y*pix][dx+wxy.x*pix].type = 1;
+    if(dir<4) wxy += dv[dir];
     };
   std::function<void(int,int,int)> hilbert_recursive = [&] (int maindir, int subdir, int l) {
     if(l == 0) return;
@@ -319,7 +334,7 @@ void create_hilbert(int lev, int pix, int border) {
   pts[border-1][pix/2].type = 6;
   hilbert_recursive(0, 3, lev);
   connection(4);
-  split_boundary(pix/2, border-1, SX-1-pix/2, border-1, 1);
+  split_boundary({pix/2, border-1}, {SX-1-pix/2, border-1}, 1);
   }
 
 void saveb(const string& s) {  
@@ -335,8 +350,8 @@ void saveb(const string& s) {
 
 #include "triangle.cpp"
 
-int pointorder(pair<int, int> xy) {
-  int x = xy.first, y = xy.second;
+int pointorder(ipoint xy) {
+  int x = xy.x, y = xy.y;
   if(x==0 && y==0) return -1;
   if(x%2 == 0 || y%2 == 0)
     return pointorder({y, (x&1) ? 1 : (x >> 1)}) + 1;
@@ -359,6 +374,18 @@ void drawstates() {
   
   }
 
+array<ipoint, 4> find_neighbors(ipoint xy) {
+  array<ipoint, 4> res;
+  for(int i=0; i<4; i++) res[i] = xy + dv[i];
+  return res;
+  /*
+    int mxx = 1, mxy = 0, myx = 0, myy = 1;
+
+  
+  while(((x+y) & 1) == 0) {
+    } */
+  }
+
 void computemap() {
 
   for(int i=0; i<2; i++) {
@@ -375,15 +402,19 @@ void computemap() {
 
       p.x[i] = 0;
       p.bonus = 0;
+      
+      ipoint xy(x, y);
+      
+      auto nei = find_neighbors(xy);
 
       if(i == 0) {
         int xp = 0;
-        for(int d=0; d<4; d++) {
-          auto t = pts[y+dy[d]][x+dx[d]].type;
+        for(auto np: nei) {
+          auto t = pts[np].type;
           if(t < 4 || t == 6 || t == 7) xp++;
           }
-        for(int d=0; d<4; d++) {
-          auto& p2 = pts[y+dy[d]][x+dx[d]];
+        for(auto np: nei) {
+          auto& p2 = pts[np];
           if(p2.type == 6) p.bonus += 0;
           else if(p2.type == 7) p.bonus += 1./xp;
           else if(p2.type < 4) {
@@ -394,8 +425,8 @@ void computemap() {
           }
         }
       if(i == 1) {
-        for(int d=0; d<4; d++) {
-          auto& p2 = pts[y+dy[d]][x+dx[d]];
+        for(auto np: nei) {
+          auto& p2 = pts[np];
           if(p2.type == 4) p.bonus += 0; 
           else if(p2.type == 5) p.bonus += 1./4; 
           else if(p2.type == 6 || p2.type == 7) p.bonus += 1./8;
@@ -404,7 +435,7 @@ void computemap() {
         }
       }
     
-    vector<pair<int, int> > allpoints;
+    vector<ipoint> allpoints;
     for(int y=0; y<SY; y++) 
     for(int x=0; x<SX; x++) if(pts[y][x].state == 1) allpoints.push_back({x, y});
     sort(allpoints.begin(), allpoints.end(), [] (auto p1, auto p2) { return pointorder(p1) < pointorder(p2); });
@@ -412,7 +443,7 @@ void computemap() {
     printf("Gaussian elimination\n");
     int lastpct = -1, citer = 0;
     for(auto co: allpoints) {
-      auto &p = pts[co.second][co.first];
+      auto &p = pts[co];
       if(p.state != 1) continue;
       int cpct = citer * 100 / size(allpoints);
       if(cpct != lastpct) {
@@ -423,7 +454,7 @@ void computemap() {
       citer++;
       if(p.eqs.count(&p)) {
         if(p.eqs[&p] == 1) {
-          printf("Variable eliminated at (%d,%d)\n", co.first, co.second);
+          printf("Variable eliminated at (%d,%d)\n", co.x, co.y);
           p.state = 3;
           }
         else {
@@ -446,7 +477,7 @@ void computemap() {
     printf("Solution retrieval\n");
     reverse(allpoints.begin(), allpoints.end());
     for(auto co: allpoints) {
-      auto &p = pts[co.second][co.first];
+      auto &p = pts[co];
       if(p.state != 2) continue;
       p.x[i] = p.bonus;
       for(auto& pa: p.eqs) p.x[i] += pa.second * pa.first->x[i];
@@ -514,7 +545,7 @@ void loadmap2(const string& fname) {
   current_side = side.id; 
   }
 
-void loadmap_join(const string& fname, int x, int y) {
+void loadmap_join(const string& fname, ipoint xy) {
   FILE *f = fopen(fname.c_str(), "rb");
   if(!f) pdie("loadmap_join");
   
@@ -523,8 +554,7 @@ void loadmap_join(const string& fname, int x, int y) {
   side.rootid = cside().rootid;
   cside().childsides.push_back(side.id);
   side.submap = new pointmap;
-  side.join_x = x/scalex + marginx;
-  side.join_y = y/scaley + marginy;
+  side.join = addmargin(xy);
   auto &epts = *side.submap;
     
   int iSX, iSY;
@@ -636,7 +666,7 @@ void draw(bitmap &b) {
     }
 
   if(mark_sides)
-    for(auto& si: sides) b[si.join_y][si.join_x] = rand();
+    for(auto& si: sides) b[si.join] = rand();
   b.draw();
   }
 
@@ -810,6 +840,7 @@ void export_video(ld spd, int cnt, const string& fname) {
 int main(int argc, char **argv) {
   int i = 1;
   auto next_arg = [&] () { if(i == argc) die("not enough arguments"); return argv[i++]; };
+  auto next_arg_ipoint = [&] () { int x = atoi(next_arg()); int y = atoi(next_arg()); return ipoint(x, y); };
   while(i < argc) {
     string s = next_arg();
     if(s == "-scale") scalex = scaley = atoi(next_arg());
@@ -821,9 +852,7 @@ int main(int argc, char **argv) {
       }
     else if(s == "-mim") load_image_for_mapping(next_arg());
     else if(s == "-cbo") {
-      int x = atoi(next_arg());
-      int y = atoi(next_arg());
-      createb_outer(x, y);
+      createb_outer(next_arg_ipoint());
       }
     else if(s == "-trim") {
       int x1 = atoi(next_arg());
@@ -833,11 +862,9 @@ int main(int argc, char **argv) {
       trim(x1, y1, x2, y2);
       }
     else if(s == "-cbi") {
-      int x1 = atoi(next_arg());
-      int y1 = atoi(next_arg());
-      int x2 = atoi(next_arg());
-      int y2 = atoi(next_arg());
-      createb_inner(x1, y1, x2, y2);
+      ipoint axy = next_arg_ipoint();
+      ipoint bxy = next_arg_ipoint();
+      createb_inner(axy, bxy);
       }
     else if(s == "-sb") saveb(next_arg());
     else if(s == "-q") draw_progress = false;
@@ -847,9 +874,7 @@ int main(int argc, char **argv) {
     else if(s == "-lm2") loadmap2(next_arg());
     else if(s == "-lmj") {
       string s = next_arg();
-      int x = atoi(next_arg());
-      int y = atoi(next_arg());
-      loadmap_join(s, x, y);
+      loadmap_join(s, next_arg_ipoint());
       }
     else if(s == "-back") {
       current_side = cside().parentid;

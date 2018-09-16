@@ -11,6 +11,18 @@
 #include <SDL/SDL.h>
 #include <gd.h>
 
+// ipoint
+
+struct ipoint {
+  int x, y;
+  ipoint(int _x, int _y): x(_x), y(_y) {}
+  ipoint() {}
+  ipoint& operator += (const ipoint& a) { x += a.x; y += a.y; return *this; }
+  ipoint& operator -= (const ipoint& a) { x -= a.x; y -= a.y; return *this; }
+  ipoint operator + (ipoint a) const { a += (*this); return a; }
+  ipoint operator - (ipoint a) const { a -= (*this); return a; }
+  };
+
 typedef long double ld;
 
 // not necessary in C++17
@@ -55,6 +67,7 @@ struct bitmap {
   void beunlocked() {
     if(isscreen && locked) locked = false, SDL_UnlockSurface(s);
     }
+  color& operator [] (ipoint xy) const { return (*this)[xy.y][xy.x]; }
   pixelrow operator [] (int y) const {
     if(y<0 || y>=s->h) return pixelrow {&errpixel, 1};
     unsigned char *dst = (unsigned char*) s->pixels;

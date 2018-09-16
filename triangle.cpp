@@ -11,7 +11,7 @@ void create_triangle(int edgelength) {
     if(y <= base && y - abs(x-SX/2) * sqrt(3) >= SY/4)
       pts[y][x].type = 1;
     }
-  split_boundary(SX/2, base+1, SX/2, SY/4-1, 1);
+  split_boundary(ipoint(SX/2, base+1), ipoint(SX/2, SY/4-1), 1);
   }
 
 bool mirror(double& dx, double& dy, double ax, double ay, double cx, double cy) {

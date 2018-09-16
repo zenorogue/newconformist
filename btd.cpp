@@ -102,19 +102,21 @@ void construct_btd() {
       auto& par = sides[si.parentid];
       par.need_btd = true;
       
-      int ex = si.join_x, ey = si.join_y;
+      ipoint ex0 = si.join;
+      ipoint ex1 = ex0 + ipoint(1, 0);
+      ipoint ex2 = ex0 + ipoint(0, 1);
       
       auto& ppts = *par.submap;
   
-      auto [old_x0, old_y0] = unband(ppts[ey][ex].x, par, 0);
-      auto [old_x1, old_y1] = unband(ppts[ey][ex+1].x, par, 0);
-      auto [old_x2, old_y2] = unband(ppts[ey+1][ex].x, par, 0);
+      auto [old_x0, old_y0] = unband(ppts[ex0].x, par, 0);
+      auto [old_x1, old_y1] = unband(ppts[ex1].x, par, 0);
+      auto [old_x2, old_y2] = unband(ppts[ex2].x, par, 0);
       
       auto& epts = *si.submap;
   
-      auto [new_x0, new_y0] = unband(epts[ey][ex].x, si, 0);
-      auto [new_x1, new_y1] = unband(epts[ey][ex+1].x, si, 0);
-      auto [new_x2, new_y2] = unband(epts[ey+1][ex].x, si, 0);
+      auto [new_x0, new_y0] = unband(epts[ex0].x, si, 0);
+      auto [new_x1, new_y1] = unband(epts[ex1].x, si, 0);
+      auto [new_x2, new_y2] = unband(epts[ex2].x, si, 0);
       
       transmatrix T = get_matrix_at(par, old_x0);
       
