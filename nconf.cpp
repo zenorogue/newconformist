@@ -603,6 +603,8 @@ bool mark_sides, no_images;
 int notypeside = 0xFFD500;
 int boundary_color = 0xFFFFFF;
 
+int bbnd = 100;
+
 void draw(bitmap &b) {
   construct_btd();
   b.belocked();
@@ -654,7 +656,7 @@ void draw(bitmap &b) {
     else {
       ld yval = 0;
       auto dc = band_to_disk(x, y, si, tsiid, yval);
-      if(yval >= 10 || yval <= -10)
+      if(yval >= bbnd || yval <= -bbnd)
         b[y][x] = boundary_color;
       else
         b[y][x] = si.img[dc[1]][dc[0]];
@@ -925,6 +927,9 @@ int main(int argc, char **argv) {
       }
     else if(s == "-btwhite") {
       boundary_color = 0xFFFFFF;
+      }
+    else if(s == "-btbnd") {
+      bbnd = atoi(next_arg());
       }
     else if(s == "-hilbert") {
       int lev = atoi(next_arg());

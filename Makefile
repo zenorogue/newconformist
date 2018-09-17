@@ -71,7 +71,7 @@ drawt12o: nconf
 	  -lmj triskeleo1.map 244 469 -back \
 	  -lmj triskeleo2.map 828 376 -back \
 	  -lmj triskeleo3.map 600 936 -back \
-	  -ntsblack -draw
+	  -ntsblack -btbnd 10 -draw
 
 drawt12ob: nconf
 	./nconf \
