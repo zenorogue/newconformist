@@ -12,7 +12,7 @@ elegant-cat-outside.map: nconf
 	./nconf -mim elegant-cat2.png -cbo 17 335 -cm -sm elegant-cat-outside.map
 
 elegant-cat-inside.map: nconf
-	./nconf -mim elegant-cat2.png -cbi 22 570 738 17 -cm -sm elegant-cat-outside.map
+	./nconf -mim elegant-cat2.png -cbi 22 570 738 17 -cm -sm elegant-cat-inside.map
 
 draw: nconf
 	./nconf \
