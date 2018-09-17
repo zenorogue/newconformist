@@ -50,6 +50,7 @@ struct datapoint {
   int type;
   int state;
   int side=0;
+  int pointorder;
   ld bonus;
   unordered_map<datapoint*, ld> eqs;
   };
@@ -349,52 +350,95 @@ void saveb(const string& s) {
 
 #include "triangle.cpp"
 
-int pointorder(ipoint xy) {
-  int x = xy.x, y = xy.y;
-  if(x==0 && y==0) return -1;
-  if(x%2 == 0 || y%2 == 0)
-    return pointorder({y, (x&1) ? 1 : (x >> 1)}) + 1;
-  else
-    return 0;
+int mousex, mousey;
+void klawisze();
+
+bool paused, zoomed;
+int zx, zy;
+
+int itc(int a) {
+  return min(a, 255);
+  // if(a < 16) return a * 8;
+  // return min(128 + (a - 16) / 16, 255);
   }
 
 void drawstates() {
-  if(!draw_progress) return;
-  initGraph(SX, SY, "conformist", false);
-  int statecolors[4] = {
-    0, 0xFF0000, 0x00FF00, 0x0000FF };
+  do {
+    if(!draw_progress) return;
+    initGraph(SX, SY, "conformist", false);
+    int statecolors[4] = {
+      0, 0x004000, 0x000040, 0x004040 };
+  
+    auto& pt = zoomed ? pts[(mousey+zy)/4][(mousex+zx)/4] : pts[mousey][mousex];
+    printf("eqs = %d\n", isize(pt.eqs));
+  
+    for(int y=0; y<SY; y++)
+    for(int x=0; x<SX; x++) {
+      auto& p = zoomed ? pts[(y+zy)/4][(x+zx)/4] : pts[y][x];
+      screen[y][x] = statecolors[p.state];
+      part(screen[y][x], 2) = itc(isize(p.eqs));
+      if(pt.eqs.count(&p)) part(screen[y][x], 2) = 0x80;
+      }
+    screen.draw();
+    
+    SDL_Event event;
+    SDL_Delay(1);
+    int ev;
+    while(ev = SDL_PollEvent(&event)) switch (event.type) {
+      case SDL_QUIT:
+        exit(1);
+        return;
+  
+      case SDL_MOUSEMOTION: {
+        mousex = event.motion.x;
+        mousey = event.motion.y;
+        break;
+        }
+      
+      case SDL_KEYDOWN: {
+        int key = event.key.keysym.sym;
+        int uni = event.key.keysym.unicode;
 
-  for(int y=0; y<SY; y++)
-  for(int x=0; x<SX; x++) {
-    auto& p = pts[y][x];
-    screen[y][x] = statecolors[p.state];
-    }
-  screen.draw();
+        if(key == 'p') paused = !paused;
+        if(key == 'z') zx = mousex*3, zy = mousey*3, zoomed = !zoomed;
+        
+        break;
+        }
+      
+      }
+  
+  } while(paused);
   
   }
 
 array<ipoint, 4> find_neighbors(ipoint xy) {
   array<ipoint, 4> res;
   for(int i=0; i<4; i++) res[i] = xy + dv[i];
-  return res;
-  /*
-    int mxx = 1, mxy = 0, myx = 0, myy = 1;
-
   
-  while(((x+y) & 1) == 0) {
-    } */
+  int ax = xy.x, ay = xy.y;
+  
+  int axv = 0, ayv = 0;
+  
+  while(!(ax&1)) ax >>= 1, axv++;
+  while(!(ay&1)) ay >>= 1, ayv++;
+  
+  pts[xy].pointorder = max(axv, ayv) * 1000 + (axv>ayv ? 500 : 0) + min(axv, ayv);
+
+  return res;
   }
+
+bool inner(int t) { return t > 0 && t < 4; }
 
 void computemap() {
 
   for(int i=0; i<2; i++) {
     printf("Building eqs, i=%d\n", i);
-
+    
     for(int y=0; y<SY; y++) 
     for(int x=0; x<SX; x++) {
       auto& p = pts[y][x];
       p.state = 0;
-      if(p.type >= 4 || p.type == 0) continue;
+      if(!inner(p.type)) continue;
       p.state = 1;
       p.eqs.clear();
       p.bonus = 0;
@@ -429,7 +473,9 @@ void computemap() {
           if(p2.type == 4) p.bonus += 0; 
           else if(p2.type == 5) p.bonus += 1./4; 
           else if(p2.type == 6 || p2.type == 7) p.bonus += 1./8;
-          else p.eqs[&p2] = 1./4;
+          else {
+            p.eqs[&p2] = 1./4;
+            }
           }
         }
       }
@@ -437,18 +483,23 @@ void computemap() {
     vector<ipoint> allpoints;
     for(int y=0; y<SY; y++) 
     for(int x=0; x<SX; x++) if(pts[y][x].state == 1) allpoints.push_back({x, y});
-    sort(allpoints.begin(), allpoints.end(), [] (auto p1, auto p2) { return pointorder(p1) < pointorder(p2); });
-
+    sort(allpoints.begin(), allpoints.end(), [] (auto p1, auto p2) { return pts[p1].pointorder < pts[p2].pointorder; });
+    
+    int lastt = SDL_GetTicks();
     printf("Gaussian elimination\n");
     int lastpct = -1, citer = 0;
     for(auto co: allpoints) {
       auto &p = pts[co];
       if(p.state != 1) continue;
-      int cpct = citer * 100 / size(allpoints);
+      int cpct = citer * 1000 / size(allpoints);
       if(cpct != lastpct) {
         lastpct = cpct;
-        printf("  %d%% [%d]\n", cpct, size(p.eqs));
-        drawstates();
+        printf("  %d/1000 [%d]\n", cpct, size(p.eqs));
+        int nextt = SDL_GetTicks();
+        if(nextt > lastt + 100) {
+          drawstates();
+          lastt = SDL_GetTicks();
+          }
         }
       citer++;
       if(p.eqs.count(&p)) {
@@ -463,12 +514,17 @@ void computemap() {
           p.bonus *= fac;
           }
         }
+      
       for(auto& pa: p.eqs) {
         auto& p2 = *pa.first;
-        ld mirror = p2.eqs[&p];
-        p2.eqs.erase(&p);
+        auto it = p2.eqs.find(&p);
+        if(it == p2.eqs.end()) continue;
+        ld mirror = it->second;
+        p2.eqs.erase(it);
         p2.bonus += p.bonus * mirror;
-        for(auto& pa: p.eqs) p2.eqs[pa.first] += pa.second * mirror;
+        for(auto& pa: p.eqs) {
+          p2.eqs[pa.first] += pa.second * mirror;
+          }
         }
       p.state = 2;
       }
@@ -485,8 +541,6 @@ void computemap() {
     printf("Done.\n");        
     }
   }
-
-int mousex, mousey;
 
 void savemap(const string& fname) {
   FILE *f = fopen(fname.c_str(), "wb");
@@ -720,8 +774,6 @@ void klawisze() {
     
     }
   }
-
-bool inner(int t) { return t > 0 && t< 4; }
 
 void load_image(const string& fname) {
   csideroot().img = readPng(fname); 
