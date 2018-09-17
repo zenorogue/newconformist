@@ -209,7 +209,7 @@ void trim(int x1, int y1, int x2, int y2) {
   }
 
 ipoint unmargin(ipoint xy) {
-  return ipoint((xy.y-marginy)*scaley, (xy.x-marginx)*scalex);
+  return ipoint((xy.x-marginx)*scalex, (xy.y-marginy)*scaley);
   }
 
 ipoint addmargin(ipoint xy) {
@@ -315,7 +315,6 @@ void create_hilbert(int lev, int pix, int border) {
     pts[y][x].type = 0;
   ipoint wxy(0, 0);
   auto connection = [&] (int dir) {
-    printf("%d %d %d\n", wxy.x, wxy.y, dir);
     for(int dy=(dir==1?-border:border); dy<(dir==3?pix+border:pix-border); dy++)
     for(int dx=(dir==2?-border:border); dx<(dir==0?pix+border:pix-border); dx++)
       pts[dy+wxy.y*pix][dx+wxy.x*pix].type = 1;

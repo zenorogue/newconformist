@@ -20,7 +20,7 @@ struct ipoint {
   ipoint& operator += (const ipoint& a) { x += a.x; y += a.y; return *this; }
   ipoint& operator -= (const ipoint& a) { x -= a.x; y -= a.y; return *this; }
   ipoint operator + (ipoint a) const { a += (*this); return a; }
-  ipoint operator - (ipoint a) const { a -= (*this); return a; }
+  ipoint operator - (ipoint a) const { ipoint p = (*this); p -= a; return p; }
   };
 
 typedef long double ld;
