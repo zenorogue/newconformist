@@ -367,7 +367,7 @@ void drawstates() {
     if(!draw_progress) return;
     initGraph(SX, SY, "conformist", false);
     int statecolors[4] = {
-      0, 0x004000, 0x000040, 0x004040 };
+      0x000080, 0x00FF00, 0x000000, 0x00FFFF };
   
     auto& pt = zoomed ? pts[(mousey+zy)/4][(mousex+zx)/4] : pts[mousey][mousex];
     printf("eqs = %d\n", isize(pt.eqs));
