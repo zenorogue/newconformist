@@ -47,6 +47,7 @@ ipoint dv[4] = { ipoint(1, 0), ipoint(0, -1), ipoint(-1, 0), ipoint(0, 1) };
 void resize_pt();
 
 bool draw_progress = true;
+bool text_progress = true;
 
 bitmap heart;
 
@@ -510,14 +511,16 @@ void computemap() {
     for(auto co: allpoints) {
       auto &p = pts[co];
       if(p.state != 1) continue;
-      int cpct = citer * 1000 / size(allpoints);
-      if(cpct != lastpct) {
-        lastpct = cpct;
-        printf("  %d/1000 [%d]\n", cpct, size(p.eqs));
-        int nextt = SDL_GetTicks();
-        if(nextt > lastt + 100) {
-          drawstates();
-          lastt = SDL_GetTicks();
+      if(text_progress) {
+        int cpct = citer * 1000 / size(allpoints);
+        if(cpct != lastpct) {
+          lastpct = cpct;
+          printf("  %d/1000 [%d]\n", cpct, size(p.eqs));
+          int nextt = SDL_GetTicks();
+          if(nextt > lastt + 100) {
+            drawstates();
+            lastt = SDL_GetTicks();
+            }
           }
         }
       citer++;
@@ -948,7 +951,9 @@ int main(int argc, char **argv) {
       createb_inner(axy, bxy);
       }
     else if(s == "-sb") saveb(next_arg());
-    else if(s == "-q") draw_progress = false;
+    else if(s == "-q") draw_progress = false, text_progress = false;
+    else if(s == "-qt") text_progress = false;
+    else if(s == "-qd") draw_progress = false;
     else if(s == "-cm") computemap();
     else if(s == "-sm") savemap(next_arg());
     else if(s == "-lm") loadmap(next_arg());
