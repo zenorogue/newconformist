@@ -48,14 +48,21 @@ cpoint band_to_disk_basic(cpoint c, sideinfo& si) {
   return hyper_to_disk(p);
   }
 
+vector2<cld> map_to_stereo;
+
 void draw_triangle(bitmap& b) {
   int edgelength = SX/3;
+  
+  map_to_stereo.resize2(SX, SY);
+
+  sideinfo *goodside;
+    
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) { 
     double dx = x, dy = y;
     int flips = 0;
 
-   int steps = 0;
+    int steps = 0;
     while(true) {
       steps++; if(steps > 100) break;
       // printf("[%lf %lf]\n", dx, dy);
@@ -68,17 +75,47 @@ void draw_triangle(bitmap& b) {
     auto& p = pts[dy][dx];    
     // printf("=> done %d\n", p.type);
     if(p.type != 1) continue;
-    auto& si = sides[p.side];
-    auto dc = band_to_disk_basic(p.x, si);
-    ld longitude = atan2(dc[1], dc[0]);
-    ld r2 = (dc|dc);
+    goodside = &sides[p.side];
+    auto dc = band_to_disk_basic(p.x, *goodside);
+    auto cdc = cld(dc[0], dc[1]);
+    map_to_stereo[y][x] = (flips&1) ? conj(cld(1,0) / cdc) : cdc;
+    }
+    
+  ld scale = 1/200.;
+  
+  /*
+  { int y = SY/2;
+  for(int x=SX/2+1; x<SX; x++)
+    map_to_stereo[y][x] = map_to_stereo[y][x-1] + map_to_stereo[y][x] * scale;
+  for(int x=SX/2-1; x>=0; x--)
+    map_to_stereo[y][x] = map_to_stereo[y][x+1] - map_to_stereo[y][x+1] * scale;
+    }
+  for(int x=0; x<SX; x++) {
+    for(int y=SY/2+1; y<SY; y++)
+      map_to_stereo[y][x] = map_to_stereo[y-1][x] + map_to_stereo[y][x] * scale / cld(0, 1);
+    for(int y=SY/2-1; y>=0; y--)
+      map_to_stereo[y][x] = map_to_stereo[y+1][x] - map_to_stereo[y+1][x] * scale / cld(0, 1);
+    } */
+
+  for(int y=0; y<SY; y++)
+  for(int x=0; x<SX-1; x++)
+    map_to_stereo[y][x] = (map_to_stereo[y][x+1] - map_to_stereo[y][x]) / scale;
+    
+  
+  for(int y=0; y<SY; y++)
+  for(int x=0; x<SX; x++) { 
+    auto& si = *goodside;
+
+    auto dc = map_to_stereo[y][x];
+    ld longitude = arg(dc);
+    ld r2 = norm(dc);
     ld r = sqrt(r2);
     
     ld zg = (r2 - 1)/(r2 + 1);
     
     ld latitude = atan2(-zg, r*(1-zg));
     
-    if(flips&1) latitude = -latitude;
+    // if(flips&1) latitude = -latitude;
     
     while(longitude < 0) longitude += 2 * M_PI;
     while(longitude >= 2 * M_PI) longitude -= 2 * M_PI;

@@ -65,6 +65,7 @@ template<class T> struct vector2 : vector<vector<T>> {
   T& operator [] (ipoint i) { return (*this)[i.y][i.x]; }
   vector<T>& operator [] (int i) { return (*(vector<vector<T>>*)this) [i]; }
   // const T& operator [] const (ipoint i) { return arr[i.y][i.x]; }  
+  void resize2(int X, int Y) { this->resize(Y); for(auto& row: *this) row.resize(X); }
   };
 
 typedef vector2<datapoint> pointmap;
