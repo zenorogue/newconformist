@@ -33,6 +33,8 @@ typedef std::complex<ld> cld;
 
 using namespace std;
 
+int elim_order = 3;
+
 ld spinspeed;
 
 #include "mat.cpp"
@@ -422,12 +424,24 @@ array<ipoint, 4> find_neighbors(ipoint xy) {
   
   int ax = xy.x, ay = xy.y;
   
+  if(elim_order == 3) {
+    if((ax+ay) & 1) { pts[xy].pointorder = 1000; return res; }
+    tie(ax, ay) = make_pair(ax+ay + (1<<16), ax-ay + (1<<16));
+    }
+  
   int axv = 0, ayv = 0;
   
   while(!(ax&1)) ax >>= 1, axv++;
   while(!(ay&1)) ay >>= 1, ayv++;
   
-  pts[xy].pointorder = max(axv, ayv) * 1000 + (axv>ayv ? 500 : 0) + min(axv, ayv);
+  if(elim_order == 0 || elim_order == 3)
+    pts[xy].pointorder = 2000 + max(axv, ayv) * 1000 + (axv>ayv ? 500 : 0) + min(axv, ayv);
+
+  if(elim_order == 1)
+    pts[xy].pointorder = xy.x + xy.y;
+
+  if(elim_order == 2)
+    pts[xy].pointorder = xy.x + xy.y + ((xy.x ^ xy.y) & 1 ? 2000 : 0);
 
   return res;
   }
@@ -1001,6 +1015,9 @@ int main(int argc, char **argv) {
       int pix = atoi(next_arg());
       int border = atoi(next_arg());
       create_hilbert(lev, pix, border);
+      }
+    else if(s == "-eo") {
+      elim_order = atoi(next_arg());
       }
     else if(s == "-triangle") {
       create_triangle(atoi(next_arg()));

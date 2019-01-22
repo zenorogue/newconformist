@@ -135,6 +135,8 @@ has hyperbolic length of 6.004 Zebra periods -- after stretching it is exactly 6
 
 `-draw`: draw the tiled shape on the screen.
 
+`-eo <n>`: experiment with different elimination orders in Gaussian elimination (0, 1, 2, 3). The default is 3 (also the fastest).
+
 `-export <image.png>`: export the tiled shape to PNG.
 
 `-exportv <speed> <cnt> <image.png>`: export the animation to a sequence of PNGs; ffmpeg can be used to make a video out of them. (You can see the animation in the `-draw` mode by pressing
