@@ -150,3 +150,9 @@ triangle400.map: nconf
 triangle-earth: nconf
 	./nconf -lm triangle400.map -li earthspin.png -tm -export triangles/tearth.png
 
+triangle-earth-draw: nconf
+	./nconf -lm triangle400.map -li earthspin.png -tm -draw
+
+
+debug: nconf-debug
+	gdb nconf-debug
