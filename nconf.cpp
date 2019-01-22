@@ -534,7 +534,6 @@ void computemap() {
             }
           }
         }
-      p.bonus1 = p.bonus;
       sort(p.eqs.begin(), p.eqs.end());
       }
     
