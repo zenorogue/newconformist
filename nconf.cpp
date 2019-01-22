@@ -586,6 +586,7 @@ void computemap() {
 
         p2.bonus += p.bonus * mirror;
         vector<equation> new_equations;
+        new_equations.reserve(max(isize(p2.eqs), isize(p.eqs)) + 4);
         auto old = p2.eqs.begin();
         auto extra = p.eqs.begin();
         while(old != p2.eqs.end() && extra != p.eqs.end())
