@@ -27,6 +27,9 @@
 #include <algorithm>
 #include <functional>
 #include <queue>
+#include <complex>
+
+typedef std::complex<ld> cld;
 
 using namespace std;
 
@@ -348,9 +351,11 @@ void saveb(const string& s) {
   fclose(f);
   }
 
-#include "triangle.cpp"
-
 int mousex, mousey;
+
+#include "triangle.cpp"
+#include "spiral.cpp"
+
 void klawisze();
 
 bool paused, zoomed;
@@ -662,6 +667,10 @@ void draw(bitmap &b) {
   construct_btd();
   b.belocked();
 
+  if(spiral_mode)
+    draw_spiral(b, SDL_GetTicks() / 5000.);
+  else
+
   if(triangle_mode)
     draw_triangle(b);
   else
@@ -874,7 +883,12 @@ void export_video(ld spd, int cnt, const string& fname) {
   measure_if_needed();
   bitmap b = emptyBitmap(SX, SY);
   for(int i=0; i<cnt; i++) {
-    draw(b);
+
+    if(spiral_mode)
+      draw_spiral(b, 2 * M_PI * (i+.5) / cnt);
+    else
+      draw(b);
+
     for(int y=0; y<SY; y++)
     for(int x=0; x<SX; x++)
       b[y][x] |= 0xFF000000;
@@ -990,6 +1004,13 @@ int main(int argc, char **argv) {
       }
     else if(s == "-triangle") {
       create_triangle(atoi(next_arg()));
+      }
+    else if(s == "-spiral") {
+      single_side(0);
+      spiral_mode = true;
+      need_measure = false;
+      SX = atoi(next_arg());
+      SY = atoi(next_arg());
       }
     else if(s == "-tm")
       triangle_mode = true;
