@@ -134,6 +134,8 @@ sideinfo& single_side(int type) {
 sideinfo& cside() { return sides[current_side]; }
 sideinfo& csideroot() { return rootof(cside()); }
 
+int sqr(int a) { return a*a; }
+
 void createb_rectangle() {
   single_side(0);
   resize_pt();
@@ -207,6 +209,31 @@ void load_image_for_mapping(const string& fname) {
   heart = readPng(fname);
   errpixel = heart[0][0];
   set_SXY(heart);
+  }
+
+void createb_circle() {
+  single_side(0);
+  resize_pt();
+  for(int y=0; y<SY; y++) 
+  for(int x=0; x<SX; x++) {
+    auto& p = pts[y][x];
+    p.type = 1;
+    p.side = 0;
+    int u = sqr(2 * x - SX + 1) + sqr(2 * y - SY + 1);
+    if(u >= sqr(min(SY, SX) - 5))
+      p.type = 0;
+    if(y == 0 || y == SY-1 || x == 0 || x == SX-1) {
+      if(y < SY/2) p.type = 4;
+      else if(y > SY/2) p.type = 5;
+      else if(x == 0) p.type = 6;
+      else p.type = 7;
+      }
+    }
+  auto [axy1, ad] = boundary_point_near({0, SY/2});
+  auto [bxy1, bd] = boundary_point_near({SX-1, SY/2});
+  printf("%d %d %d %d %d %d\n", axy1.x, axy1.y, ad, bxy1.x, bxy1.y, bd);
+  
+  split_boundary(axy1, bxy1, bd^2);
   }
 
 int trim_x1 = 0, trim_y1 = 0, trim_x2 = 99999, trim_y2 = 99999;
@@ -965,6 +992,10 @@ int main(int argc, char **argv) {
       SX = atoi(next_arg());
       SY = atoi(next_arg());
       createb_rectangle();
+      }
+    else if(s == "-circle") {
+      SX = SY = atoi(next_arg());
+      createb_circle();
       }
     else if(s == "-mim") load_image_for_mapping(next_arg());
     else if(s == "-cbo") {

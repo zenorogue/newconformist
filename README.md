@@ -77,6 +77,8 @@ The (*) signifies options which should be there but are not implemented yet (the
 
 `-rectangle <X> <Y>`: prepare a XxY rectangle from mapping.
 
+`-circle <R>`: prepare a circle of radius R for mapping. We know how to make a circular conformal model, so this is for testing our approximations.
+
 `-scale <scale>`: scale the loaded shapes down by the given factor. Useful for quick testing.
 
 `-margin <margin>`: automatically add margins to the loaded shape images. When `-scale` is given after `-margin`, the margin is scaled too, otherwise it is not scaled.
