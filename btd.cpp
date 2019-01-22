@@ -10,7 +10,7 @@ pair<ld, ld> unband(cpoint& c, sideinfo& si, ld shift) {
   y *= M_PI / 2;
   x *= M_PI / 2;
 
-  y = 2 * atanh(tan(y/2));
+  y = -2 * atanh(tan(y/2));
   
   return make_pair(x, y);
   }
