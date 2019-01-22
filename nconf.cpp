@@ -51,6 +51,8 @@ bool text_progress = true;
 
 bitmap heart;
 
+typedef pair<struct datapoint*, ld> equation;
+
 struct datapoint {
   cpoint x;
   int type;
@@ -58,7 +60,7 @@ struct datapoint {
   int side=0;
   int pointorder;
   ld bonus;
-  unordered_map<datapoint*, ld> eqs;
+  vector<equation> eqs;
   };
 
 template<class T> struct vector2 : vector<vector<T>> {
@@ -371,6 +373,12 @@ int itc(int a) {
   // return min(128 + (a - 16) / 16, 255);
   }
 
+ld find_equation(vector<equation>& v, datapoint& p) {
+  auto seek = std::lower_bound(v.begin(), v.end(), equation{&p, -HUGE_VAL});
+  if(seek != p.eqs.end() && seek->first == &p) return seek->second;
+  return 0;
+  }
+
 void drawstates() {
   do {
     if(!draw_progress) return;
@@ -386,7 +394,7 @@ void drawstates() {
       auto& p = zoomed ? pts[(y+zy)/4][(x+zx)/4] : pts[y][x];
       screen[y][x] = statecolors[p.state];
       part(screen[y][x], 2) = itc(isize(p.eqs));
-      if(pt.eqs.count(&p)) part(screen[y][x], 2) = 0x80;
+      if(find_equation(pt.eqs, p)) part(screen[y][x], 2) = 0x80;
       }
     screen.draw();
     
@@ -482,7 +490,7 @@ void computemap() {
           if(p2.type == 6) p.bonus += 0;
           else if(p2.type == 7) p.bonus += 1./xp;
           else if(p2.type < 4) {
-            p.eqs[&p2] = 1./xp;
+            p.eqs.emplace_back(&p2, 1./xp);
             if(p.type == 2 && p2.type == 3) p.bonus += 1./xp;
             if(p.type == 3 && p2.type == 2) p.bonus -= 1./xp;
             }
@@ -495,10 +503,12 @@ void computemap() {
           else if(p2.type == 5) p.bonus += 1./4; 
           else if(p2.type == 6 || p2.type == 7) p.bonus += 1./8;
           else {
-            p.eqs[&p2] = 1./4;
+            p.eqs.emplace_back(&p2, 1./4);
             }
           }
         }
+      p.bonus1 = p.bonus;
+      sort(p.eqs.begin(), p.eqs.end());
       }
     
     vector<ipoint> allpoints;
@@ -525,29 +535,50 @@ void computemap() {
           }
         }
       citer++;
-      if(p.eqs.count(&p)) {
-        if(p.eqs[&p] == 1) {
+      
+      ld self = find_equation(p.eqs, p);
+      
+      if(self) {
+        if(self == 1) {
           printf("Variable eliminated at (%d,%d)\n", co.x, co.y);
           p.state = 3;
           }
         else {
-          ld fac = 1 / (1 - p.eqs[&p]);
-          p.eqs.erase(&p);
-          for(auto& pa: p.eqs) pa.second *= fac;
+          ld fac = 1 / (1 - self);
+          auto b = p.eqs.begin();
+          for(auto &pa: p.eqs) if(pa.first != &p) *(b++) = {pa.first, pa.second * fac};
+          p.eqs.resize(b - p.eqs.begin());
           p.bonus *= fac;
           }
         }
       
       for(auto& pa: p.eqs) {
         auto& p2 = *pa.first;
-        auto it = p2.eqs.find(&p);
-        if(it == p2.eqs.end()) continue;
-        ld mirror = it->second;
-        p2.eqs.erase(it);
+
+        ld mirror = find_equation(p2.eqs, p);
+        if(!mirror) continue;
+
         p2.bonus += p.bonus * mirror;
-        for(auto& pa: p.eqs) {
-          p2.eqs[pa.first] += pa.second * mirror;
+        vector<equation> new_equations;
+        auto old = p2.eqs.begin();
+        auto extra = p.eqs.begin();
+        while(old != p2.eqs.end() && extra != p.eqs.end())
+          if(old->first < extra->first) {
+            if(old->first == &p) old++;
+            else new_equations.push_back(*old), old++;
+            }
+          else if(old->first > extra->first)
+            new_equations.emplace_back(extra->first, extra->second * mirror), extra++;
+          else
+            new_equations.emplace_back(old->first, old->second + extra->second * mirror), old++, extra++;
+        while(old != p2.eqs.end()) {
+          if(old->first == &p) old++;
+          else new_equations.push_back(*old), old++;
           }
+        while(extra != p.eqs.end())
+          new_equations.emplace_back(extra->first, extra->second * mirror), extra++;
+          
+        p2.eqs = std::move(new_equations);
         }
       p.state = 2;
       }
