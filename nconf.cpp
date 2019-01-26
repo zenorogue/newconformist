@@ -423,6 +423,10 @@ void drawstates(pointmap& ptmap) {
     for(int x=0; x<SX; x++) {
       auto& p = zoomed ? ptmap[(y+zy)/4][(x+zx)/4] : ptmap[y][x];
       screen[y][x] = statecolors[p.state];
+      if(p.state == 0) switch(p.type) {
+        case 4: screen[y][x] = 0xFFFFFF; break;
+        case 5: screen[y][x] = 0xFF00FF; break;
+        }
       part(screen[y][x], 2) = itc(isize(p.eqs));
       if(find_equation(pt.eqs, p)) part(screen[y][x], 2) = 0x80;
       }
