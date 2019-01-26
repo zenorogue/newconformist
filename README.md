@@ -87,10 +87,15 @@ Default: 32.
 
 `-mim <shape.png>`: set up an image file for mapping
 
+`-mapin`: compute the internal mapping automatically, so `nconf -mim shape.png -mapin -draw` should work. Points not of the same color as (0,0) are considered to be inside.
+This is roughly similar to `-cbi <x1> <y1> <x2> <y2> -cm`, except that the point inclusion rule is different, and that the points `<x1,y1>` and <x2,y2>`  are chosen automatically
+as the diameter of the picture.
+
 `-cbo <x> <y>`: prepare the outside of the image specified with `-mim` for mapping. Pixels with the same color as (x,y) are considered to be outside. The given coordinates need to
 be straight to the left from the inner hole. Coordinates are given relative to the original image, i.e., before scaling and adding margins.
 
-`-cbi <shape.png> <x1> <y1> <x2> <y2>`: prepare the inside of the image specified with `-mim` for mapping. The points A and B are the points on the boundary closest to the given coordinates.
+`-cbi <x1> <y1> <x2> <y2>`: prepare the inside of the image specified with `-mim` for mapping. Points with the same color as (x1,y1) are considered to be inside.
+The points A and B are the points on the boundary closest to the given coordinates.
 Coordinates are given relative to the original image, i.e., before scaling and adding margins.
 
 `-sb <file>`: save the current boundaries in text format. (*) No way to load this format.

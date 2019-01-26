@@ -488,14 +488,14 @@ array<ipoint, 4> find_neighbors(ipoint xy) {
 
 bool inner(int t) { return t > 0 && t < 4; }
 
-void computemap() {
+void computemap(pointmap& ptmap) {
 
   for(int i=0; i<2; i++) {
     printf("Building eqs, i=%d\n", i);
     
     for(int y=0; y<SY; y++) 
     for(int x=0; x<SX; x++) {
-      auto& p = pts[y][x];
+      auto& p = ptmap[y][x];
       p.state = 0;
       if(!inner(p.type)) continue;
       p.state = 1;
@@ -512,11 +512,11 @@ void computemap() {
       if(i == 0) {
         int xp = 0;
         for(auto np: nei) {
-          auto t = pts[np].type;
+          auto t = ptmap[np].type;
           if(t < 4 || t == 6 || t == 7) xp++;
           }
         for(auto np: nei) {
-          auto& p2 = pts[np];
+          auto& p2 = ptmap[np];
           if(p2.type == 6) p.bonus += 0;
           else if(p2.type == 7) p.bonus += 1./xp;
           else if(p2.type < 4) {
@@ -528,7 +528,7 @@ void computemap() {
         }
       if(i == 1) {
         for(auto np: nei) {
-          auto& p2 = pts[np];
+          auto& p2 = ptmap[np];
           if(p2.type == 4) p.bonus += 0; 
           else if(p2.type == 5) p.bonus += 1./4; 
           else if(p2.type == 6 || p2.type == 7) p.bonus += 1./8;
@@ -542,14 +542,14 @@ void computemap() {
     
     vector<ipoint> allpoints;
     for(int y=0; y<SY; y++) 
-    for(int x=0; x<SX; x++) if(pts[y][x].state == 1) allpoints.push_back({x, y});
-    sort(allpoints.begin(), allpoints.end(), [] (auto p1, auto p2) { return pts[p1].pointorder < pts[p2].pointorder; });
+    for(int x=0; x<SX; x++) if(ptmap[y][x].state == 1) allpoints.push_back({x, y});
+    sort(allpoints.begin(), allpoints.end(), [] (auto p1, auto p2) { return ptmap[p1].pointorder < ptmap[p2].pointorder; });
     
     int lastt = SDL_GetTicks();
     printf("Gaussian elimination\n");
     int lastpct = -1, citer = 0;
     for(auto co: allpoints) {
-      auto &p = pts[co];
+      auto &p = ptmap[co];
       if(p.state != 1) continue;
       if(text_progress) {
         int cpct = citer * 1000 / size(allpoints);
@@ -616,10 +616,11 @@ void computemap() {
     printf("Solution retrieval\n");
     reverse(allpoints.begin(), allpoints.end());
     for(auto co: allpoints) {
-      auto &p = pts[co];
+      auto &p = ptmap[co];
       if(p.state != 2) continue;
       p.x[i] = p.bonus;
       for(auto& pa: p.eqs) p.x[i] += pa.second * pa.first->x[i];
+      p.eqs = vector<equation> ();
       }
     
     printf("Done.\n");        
@@ -699,8 +700,7 @@ void loadmap_join(const string& fname, ipoint xy) {
   fread(&iSY, sizeof(iSY), 1, f);
   if(iSX != SX || iSY != SY) die("map size mismatch\n");
 
-  epts.resize(SY);
-  for(int y=0; y<SY; y++) epts[y].resize(SX);
+  epts.resize2(SX, SY);
 
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) {
@@ -1022,6 +1022,8 @@ void export_video(ld spd, int cnt, const string& fname) {
     }
   }
 
+#include "automapper.cpp"
+
 int main(int argc, char **argv) {
   int i = 1;
   auto next_arg = [&] () { if(i == argc) die("not enough arguments"); return argv[i++]; };
@@ -1055,11 +1057,14 @@ int main(int argc, char **argv) {
       ipoint bxy = next_arg_ipoint();
       createb_inner(axy, bxy);
       }
+    else if(s == "-mapin") {
+      auto_mapin();
+      }
     else if(s == "-sb") saveb(next_arg());
     else if(s == "-q") draw_progress = false, text_progress = false;
     else if(s == "-qt") text_progress = false;
     else if(s == "-qd") draw_progress = false;
-    else if(s == "-cm") computemap();
+    else if(s == "-cm") computemap(pts);
     else if(s == "-sm") savemap(next_arg());
     else if(s == "-lm") loadmap(next_arg());
     else if(s == "-lm2") loadmap2(next_arg());
