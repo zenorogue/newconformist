@@ -14,6 +14,18 @@ elegant-cat-outside.map: nconf
 elegant-cat-inside.map: nconf
 	./nconf -mim elegant-cat2.png -cbi 22 570 738 17 -cm -sm elegant-cat-inside.map
 
+elegant-cat-inside-big.map: nconf
+	./nconf -mim elegant-cat3.png -cbi 66 1710 2214 51 -cm -sm elegant-cat-inside-big.map
+
+elegant-cat-outside-big.map: nconf
+	./nconf -mim elegant-cat3.png -cbo 51 1005 -cm -sm elegant-cat-outside-big.map
+
+big-cat.png: nconf
+	./nconf \
+	  -lm elegant-cat-outside-big.map -li zebra.png -zebra -period 6 -fix \
+	  -lm2 elegant-cat-inside-big.map -li reptiles.png -zebra -period 3 \
+	  -export big-cat.png
+
 draw: nconf
 	./nconf \
 	  -lm elegant-cat-outside.map -li zebra.png -zebra -period 6 -fix \
