@@ -75,11 +75,6 @@ https://openclipart.org/detail/258901/elegant-cat-silhouette .
 Newconformist is controlled via command line options. See the Makefile for the invocations used to create the sample image.
 The (*) signifies options which should be there but are not implemented yet (they would be rather easy to add).
 
-`-rectangle <X> <Y>`: prepare a XxY rectangle from mapping. The inside will be prepared automatically, so no need to do `cbi`.
-
-`-circle <R>`: prepare a circle of radius R for mapping. We know how to make a circular conformal model, so this is for testing our approximations.
-The inside will be prepared automatically, so no need to do `cbi`.
-
 `-scale <scale>`: scale the loaded shapes down by the given factor. Useful for quick testing.
 
 `-margin <margin>`: automatically add margins to the loaded shape images. When `-scale` is given after `-margin`, the margin is scaled too, otherwise it is not scaled.
@@ -88,35 +83,12 @@ Default: 32.
 
 `-mim <shape.png>`: set up an image file for mapping
 
-`-mapin`: compute the internal mapping automatically, so `nconf -mim shape.png -mapin -draw` should work. Points not of the same color as (0,0) are considered to be inside.
-This is roughly similar to `-cbi <x1> <y1> <x2> <y2> -cm`, except that the point inclusion rule is different, and that the points `<x1,y1>` and <x2,y2>`  are chosen automatically
-as the diameter of the picture.
+`-mapat <x> <y>`: Compute the conformal mapping for the region including pixel (x,y) (given in original coordinates). This region contains all the pixels of the same color
+as (x,y) and connected to it.
 
-`-cbo <x> <y>`: prepare the outside of the image specified with `-mim` for mapping. Pixels with the same color as (x,y) are considered to be outside. The given coordinates need to
-be straight to the left from the inner hole. Coordinates are given relative to the original image, i.e., before scaling and adding margins.
+`-sma <file.map>`: save all the conformal mappings in the memory to a file.
 
-`-cbi <x1> <y1> <x2> <y2>`: prepare the inside of the image specified with `-mim` for mapping. Points with the same color as (x1,y1) are considered to be inside.
-The points A and B are the points on the boundary closest to the given coordinates.
-Coordinates are given relative to the original image, i.e., before scaling and adding margins.
-
-`-sb <file>`: save the current boundaries in text format. (*) No way to load this format.
-
-`-hilbert <level> <width> <border>`: create a shape based on the Hilbert curve. Parameters are: the level of the Hilbert curve, width in pixels (including the border), and the width of 
-the border in pixels (on one side). Sample values: `-hilbert 4 32 2`. The inside will be prepared automatically, so no need to do `cbi`.
-
-`-cm`: compute the mapping.
-
-`-sm <file.map>`: save the current map to a file.
-
-`-lm <file.map>`: load the previously computed map from a file.
-
-`-lm2 <file.map>`: use both outside and inside map with -lm <outside-file.map> <tiling options...> -lm2 <inside-file.map> <tiling options...>.
-
-`-lmjoin <file.map> <x> <y>`: merge a fork given in <file.map>. Coordinates specify the merging point; the current values of scale and margin are used to understand ,x> and <y>.
-
-`-back`: the command `-lmjoin` by default merges the last side. This command tells the next `-lmjoin` to use the parent of that side instead. For example, to map a binary three with
-eight leaves A, B, C, D, E, F, G, H, you would write `-lm A -lmjoin B -back -lmjoin C -lmjoin D -back -back -lmjoin E -lmjoin F -back -lmjoin G -lmjoin H -back -back -back` (merging
-points omitted for clarity).
+`-lma <file.map>`: load a file saved with `-sma`.
 
 `-li <tiling.png>`: tile the current shape with the given hyperbolic tiling. The tiling picture should be in the Poincaré disk model. Pictures generated
 by the "HQ shot" feature in HyperRogue's map editor work well (the periods assume that you have not moved nor rotated the screen). 
@@ -152,8 +124,46 @@ the `1`-`9` keys, `0` to stop, `r` to reverse.)
 
 `-bandlen`: when animating a band, tells you what parameters should be given to make a loop.
 
-`-mergesides`: if you generate multiple sides manually (with -cbi or -cbo), it is necessary to use this after each of them.
-
 `-chessmap <x> <y>`: instead of loading an image, display the hyperbolic straight line from <x1,y1> to <x2,y2>, and the orthogonal line passing throough <x,y>, with markers each 1 hyperbolic unit.
 
 `-q`: do not display the progress while computing maps. Also `-qt` does not display the progress in text, and `-qd` does not display the progress as a picture.
+
+# Shapes
+
+`-rectangle <X> <Y> -cm`: prepare a XxY rectangle from mapping.
+
+`-circle <R> -cm`: prepare a circle of radius R for mapping. We know how to make a circular conformal model, so this is for testing our approximations.
+
+`-hilbert <level> <width> <border> -cm`: create a shape based on the Hilbert curve. Parameters are: the level of the Hilbert curve, width in pixels (including the border), and the width of 
+the border in pixels (on one side). Sample values: `-hilbert 4 32 2 -cm`.
+
+# Obsolete commands
+
+These commands come from earlier versions of Newconformist. It is better to use the commands above.
+
+`-cbo <x> <y>`: prepare the outside of the image specified with `-mim` for mapping. Pixels with the same color as (x,y) are considered to be outside. The given coordinates need to
+be straight to the left from the inner hole. Coordinates are given relative to the original image, i.e., before scaling and adding margins.
+
+`-cbi <x1> <y1> <x2> <y2>`: prepare the inside of the image specified with `-mim` for mapping. Points with the same color as (x1,y1) are considered to be inside.
+The points A and B are the points on the boundary closest to the given coordinates.
+Coordinates are given relative to the original image, i.e., before scaling and adding margins.
+
+`-sb <file>`: save the current boundaries in text format. (*) No way to load this format.
+
+`-cm`: compute the mapping.
+
+`-mergesides`: if you generate multiple sides manually (with -cbi or -cbo), it is necessary to use this after mapping each of them.
+
+`-sm <file.map>`: save the current map to a file.
+
+`-lm <file.map>`: load the previously computed map from a file.
+
+`-lm2 <file.map>`: use both outside and inside map with -lm <outside-file.map> <tiling options...> -lm2 <inside-file.map> <tiling options...>.
+
+`-lmjoin <file.map> <x> <y>`: merge a fork given in <file.map>. Coordinates specify the merging point; the current values of scale and margin are used to understand ,x> and <y>.
+
+`-back`: the command `-lmjoin` by default merges the last side. This command tells the next `-lmjoin` to use the parent of that side instead. For example, to map a binary three with
+eight leaves A, B, C, D, E, F, G, H, you would write `-lm A -lmjoin B -back -lmjoin C -lmjoin D -back -back -lmjoin E -lmjoin F -back -lmjoin G -lmjoin H -back -back -back` (merging
+points omitted for clarity).
+
+

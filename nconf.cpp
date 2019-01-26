@@ -82,6 +82,7 @@ struct sideinfo {
   bitmap img;
   vector<bitmap> img_band;
   cpoint cscale;
+  ipoint inner_point;
   ld xcenter;
   ld period;
   ld period_unit;
@@ -270,6 +271,7 @@ unsigned& get_heart(ipoint xy) {
 void createb_outer(ipoint cxy) {
   create_side(1);
   
+  cside().inner_point = cxy;
   auto inpixel = get_heart(cxy);
 
   queue<ipoint> boundary;
@@ -326,6 +328,7 @@ void createb_outer(ipoint cxy) {
 void createb_inner(ipoint axy, ipoint bxy) {
   create_side(0);
 
+  cside().inner_point = axy;
   auto inpixel = heart[axy];
   printf("%x %x err %x\n", inpixel, heart[bxy], errpixel);
   if(heart[bxy] != inpixel) die("both pixels should be in");
@@ -440,6 +443,8 @@ void drawstates(pointmap& ptmap) {
         }
       part(screen[y][x], 2) = itc(isize(p.eqs));
       if(find_equation(pt.eqs, p)) part(screen[y][x], 2) = 0x80;
+      if(p.type == 2) part(screen[y][x], 0) |= 0x20;
+      if(p.type == 3) part(screen[y][x], 0) |= 0x40;
       }
     screen.draw();
     
@@ -948,6 +953,7 @@ bool need_measure = true;
 
 void measure(sideinfo& si) {
   
+  if(si.type == 3) return;
   int sii = si.id;
   auto& gpts = *si.submap;  
 
@@ -1100,11 +1106,11 @@ int main(int argc, char **argv) {
       ipoint bxy = next_arg_ipoint();
       createb_inner(axy, bxy);
       }
-    else if(s == "-mapin") {
-      auto_map(0);
+    else if(s == "-mapat") {
+      auto_map_at(addmargin(next_arg_ipoint()));
       }
-    else if(s == "-mapout") {
-      auto_map(1);
+    else if(s == "-mapall") {
+      auto_map_all();
       }
     else if(s == "-sb") saveb(next_arg());
     else if(s == "-q") draw_progress = false, text_progress = false;
@@ -1112,14 +1118,21 @@ int main(int argc, char **argv) {
     else if(s == "-qd") draw_progress = false;
     else if(s == "-cm") computemap(pts);
     else if(s == "-sm") savemap(next_arg());
+    else if(s == "-sma") save_all_maps(next_arg());
     else if(s == "-lm") loadmap(next_arg());
     else if(s == "-lm2") loadmap2(next_arg());
+    else if(s == "-lma") load_all_maps(next_arg());
     else if(s == "-lmj") {
       string s = next_arg();
       loadmap_join(s, next_arg_ipoint());
       }
     else if(s == "-back") {
       current_side = cside().parentid;
+      }
+    else if(s == "-side") {
+      current_side = atoi(next_arg());
+      if(current_side < 0 || current_side >= isize(sides))
+        pdie("error: wrong side number");
       }
     else if(s == "-li") load_image(next_arg());
     else if(s == "-lband") load_image_band(next_arg());
