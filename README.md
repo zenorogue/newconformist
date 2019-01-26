@@ -75,9 +75,10 @@ https://openclipart.org/detail/258901/elegant-cat-silhouette .
 Newconformist is controlled via command line options. See the Makefile for the invocations used to create the sample image.
 The (*) signifies options which should be there but are not implemented yet (they would be rather easy to add).
 
-`-rectangle <X> <Y>`: prepare a XxY rectangle from mapping.
+`-rectangle <X> <Y>`: prepare a XxY rectangle from mapping. The inside will be prepared automatically, so no need to do `cbi`.
 
 `-circle <R>`: prepare a circle of radius R for mapping. We know how to make a circular conformal model, so this is for testing our approximations.
+The inside will be prepared automatically, so no need to do `cbi`.
 
 `-scale <scale>`: scale the loaded shapes down by the given factor. Useful for quick testing.
 
@@ -101,7 +102,7 @@ Coordinates are given relative to the original image, i.e., before scaling and a
 `-sb <file>`: save the current boundaries in text format. (*) No way to load this format.
 
 `-hilbert <level> <width> <border>`: create a shape based on the Hilbert curve. Parameters are: the level of the Hilbert curve, width in pixels (including the border), and the width of 
-the border in pixels (on one side). Sample values: `-hilbert 4 32 2`.
+the border in pixels (on one side). Sample values: `-hilbert 4 32 2`. The inside will be prepared automatically, so no need to do `cbi`.
 
 `-cm`: compute the mapping.
 
@@ -150,6 +151,8 @@ has hyperbolic length of 6.004 Zebra periods -- after stretching it is exactly 6
 the `1`-`9` keys, `0` to stop, `r` to reverse.)
 
 `-bandlen`: when animating a band, tells you what parameters should be given to make a loop.
+
+`-mergesides`: if you generate multiple sides manually (with -cbi or -cbo), it is necessary to use this after each of them.
 
 `-chessmap <x> <y>`: instead of loading an image, display the hyperbolic straight line from <x1,y1> to <x2,y2>, and the orthogonal line passing throough <x,y>, with markers each 1 hyperbolic unit.
 

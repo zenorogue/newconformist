@@ -13,39 +13,11 @@ ipoint get_last_point(pointmap& ptmap, ipoint start) {
 
 ld frac(ld x) { return x - floor(x); }
 
-void auto_mapin() {
-  single_side(0);
-  auto outpixel = get_heart(ipoint{0,0});
-  
-  ipoint start;
-
-  for(int y=0; y<SY; y++) 
-  for(int x=0; x<SX; x++) {
-    auto xy = ipoint(x, y);
-    auto& p = pts[xy];
-
-    p.side = 0;
-    if(get_heart(xy) != outpixel && x && y && x < SX-1 && y < SY-1)
-      p.type = 1, start = xy;
-    else
-      p.type = 0;
-    }
-  
-  ipoint axy = get_last_point(pts, start);
-  ipoint bxy = get_last_point(pts, axy);
-  printf("axy = %d,%d bxy = %d,%d\n", axy.x, axy.y, bxy.x, bxy.y);
-  
-  auto [axy1, ad] = boundary_point_near(pts, axy);
-  auto [bxy1, bd] = boundary_point_near(pts, bxy);
-
-  printf("axy1 = %d,%d bxy1 = %d,%d\n", axy1.x, axy1.y, bxy1.x, bxy1.y);
-  
-  split_boundary(pts, axy1, bxy1, bd^2);
-  
-  computemap(pts);
-  
+void auto_joins() {
   measure(cside());
   construct_btd_for(cside());
+  
+  vector<ipoint> last_points;
   
   again:
   
@@ -91,6 +63,11 @@ void auto_mapin() {
   printf("d=%d until %d\n", d, nextd);
   
   ipoint ending = q.back().first;
+  for(ipoint p: last_points) if(p == ending) {
+    printf("error: ending repeats\n");
+    return;
+    }
+  last_points.push_back(ending);
   int parent_side = q.back().second;
   for(auto pt: q) pts[pt.first].type = 1;
   
@@ -126,10 +103,11 @@ void auto_mapin() {
       if(err < error) error = err, side.join = xy;
       
       ld nlow = frac(pold.x[0] - ppts[ending].x[0] + .5);
-      if(nlow < low) low = nlow, lowpoint = xy;
+      if(nlow < low && p.type == 1) low = nlow, lowpoint = xy;
       }
     
     printf("side = %d->%d->%d join = %d,%d ending = %d,%d\n", parside.rootid, parent_side, side.id, side.join.x, side.join.y, ending.x, ending.y);
+    printf("low = %lf (ending = %lf) at %d,%d\n", double(low), double(ppts[ending].x[0]), lowpoint.x, lowpoint.y);
 
     auto [axy2, ad2] = boundary_point_near(epts, lowpoint);
     auto [bxy2, bd2] = boundary_point_near(epts, ending);
@@ -143,5 +121,53 @@ void auto_mapin() {
     
     goto again;
     }
+  }
+
+void auto_map(int inout) {
+  auto outpixel = get_heart(ipoint{0,0});
+  
+  if(inout == 0) {  
+    current_side = new_side(inout).id;
+    ipoint start;
+  
+    for(int y=0; y<SY; y++) 
+    for(int x=0; x<SX; x++) {
+      auto xy = ipoint(x, y);
+      auto& p = pts[xy];
+      
+      p.baktype = p.type;
+  
+      if(get_heart(xy) != outpixel && x && y && x < SX-1 && y < SY-1)
+        p.type = 1, start = xy, p.side = current_side;
+      else
+        p.type = 0;
+      }
+    
+    ipoint axy = get_last_point(pts, start);
+    ipoint bxy = get_last_point(pts, axy);
+    printf("axy = %d,%d bxy = %d,%d\n", axy.x, axy.y, bxy.x, bxy.y);
+    
+    auto [axy1, ad] = boundary_point_near(pts, axy);
+    auto [bxy1, bd] = boundary_point_near(pts, bxy);
+  
+    printf("axy1 = %d,%d bxy1 = %d,%d\n", axy1.x, axy1.y, bxy1.x, bxy1.y);
+    
+    split_boundary(pts, axy1, bxy1, bd^2);
+    }
+  else {
+    for(int y=5; y<SY-5; y++) 
+    for(int x=5; x<SX-5; x++) 
+      if(get_heart(ipoint(x,y)) == outpixel && get_heart(ipoint(x+1, y)) != outpixel) {
+        createb_outer(ipoint(x, y));
+        goto done;
+        }    
+    done: ;
+    }
+  
+  computemap(pts);
+  
+  auto_joins();
+  
+  merge_sides();
   }
 

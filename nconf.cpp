@@ -60,8 +60,7 @@ typedef pair<struct datapoint*, ld> equation;
 
 struct datapoint {
   cpoint x;
-  int type;
-  int state;
+  char type, baktype, state;
   int side=0;
   int pointorder;
   ld bonus;
@@ -131,6 +130,12 @@ sideinfo& new_side(int type) {
 
 sideinfo& single_side(int type) {
   sides.clear();
+  auto& side = new_side(type);
+  current_side = side.id;
+  return side;
+  }
+
+sideinfo& create_side(int type) {
   auto& side = new_side(type);
   current_side = side.id;
   return side;
@@ -263,7 +268,7 @@ unsigned& get_heart(ipoint xy) {
   }
 
 void createb_outer(ipoint cxy) {
-  single_side(1);
+  create_side(1);
   
   auto inpixel = get_heart(cxy);
 
@@ -276,7 +281,7 @@ void createb_outer(ipoint cxy) {
   for(int x=0; x<SX; x++) {
     ipoint xy(x, y);
     auto& p = pts[y][x];
-    p.side = 0;
+    p.baktype = p.type;
 
     if(x == 0) {
       p.type = 4;
@@ -296,12 +301,15 @@ void createb_outer(ipoint cxy) {
       }
     else if(get_heart(xy) != inpixel)
       p.type = 5;
-    else if(x > cxy.x)
-      p.type = 1;
-    else if(y < cxy.y)
-      p.type = 2;
-    else
-      p.type = 3;
+    else {
+      p.side = current_side;
+      if(x > cxy.x)
+        p.type = 1;
+      else if(y < cxy.y)
+        p.type = 2;
+      else
+        p.type = 3;
+      }
     }
   
   while(!boundary.empty()) {
@@ -316,7 +324,7 @@ void createb_outer(ipoint cxy) {
   }
 
 void createb_inner(ipoint axy, ipoint bxy) {
-  single_side(0);
+  create_side(0);
 
   auto inpixel = heart[axy];
   printf("%x %x err %x\n", inpixel, heart[bxy], errpixel);
@@ -332,6 +340,7 @@ void createb_inner(ipoint axy, ipoint bxy) {
     bool trimmed = ax < trim_x1 || ax >= trim_x2 || ay < trim_y1 || ay >= trim_y2;
 
     p.side = 0;
+    p.baktype = p.type;
     if(get_heart(xy) == inpixel && x && y && x < SX-1 && y < SY-1 && !trimmed)
       p.type = 1;
     else
@@ -647,6 +656,18 @@ void savemap(const string& fname) {
   fclose(f);
   }
 
+void merge_sides() {
+  if(current_side > 0) {
+    for(int y=0; y<SY; y++) 
+    for(int x=0; x<SX; x++) {
+      auto xy = ipoint(x, y);
+      auto& p = pts[xy];
+      if(p.type == 0 || p.type >= 4)
+        p.type = p.baktype;
+      }
+    }
+  }
+
 void loadmap(const string& fname) {
   auto& side = single_side(0);
 
@@ -934,8 +955,14 @@ void measure(sideinfo& si) {
   
   printf("side #%d (type %d), x %p\n", si.id, si.type, &gpts);
   
+  int valid = 0, total = 0;
+
+  for(int y=0; y<SY; y++)
+  for(int x=0; x<SX; x++) if(gpts[y][x].side == sii) if(inner(gpts[y][x].type)) total++;
+  
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) if(gpts[y][x].side == sii) if(inner(gpts[y][x].type) && gpts[y+1][x].side == sii && inner(gpts[y+1][x].type) && gpts[y][x+1].side == sii && inner(gpts[y][x+1].type)) {
+    valid++;
     auto c = get_conformity(x, y, si);
     if(isnan(c[0])) continue;
     if(isnan(c[1])) continue;
@@ -945,12 +972,15 @@ void measure(sideinfo& si) {
   for(int i: {0,1}) sort(cscs[i].begin(), cscs[i].end());  
   int q = size(cscs[0]);
   
+  printf("point counts: %d/%d/%d\n", q, valid, total);
+  if(!q) die("no valid points");
+  
   si.cscale = { cscs[0][q/2], cscs[1][q/2] };
   
-  for(int i=0; i<=16; i++) {
-    int id = (q * i) / 16;
+  /* for(int i=0; i<=16; i++) {
+    int id = (q * i - 1) / 16;
     printf("[%2d] %Lf %Lf\n", i, cscs[0][id], cscs[1][id]);
-    }
+    } */
 
   printf("conformity: %Lf %Lf (%d points)\n", si.cscale[0], si.cscale[1], q);
   
@@ -1071,7 +1101,10 @@ int main(int argc, char **argv) {
       createb_inner(axy, bxy);
       }
     else if(s == "-mapin") {
-      auto_mapin();
+      auto_map(0);
+      }
+    else if(s == "-mapout") {
+      auto_map(1);
       }
     else if(s == "-sb") saveb(next_arg());
     else if(s == "-q") draw_progress = false, text_progress = false;
@@ -1161,6 +1194,8 @@ int main(int argc, char **argv) {
       SX = atoi(next_arg());
       SY = atoi(next_arg());
       }
+    else if(s == "-mergesides")
+      merge_sides();
     else if(s == "-tm")
       triangle_mode = true;
     else die("unrecognized argument: " + s);

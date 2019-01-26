@@ -21,6 +21,7 @@ struct ipoint {
   ipoint& operator -= (const ipoint& a) { x -= a.x; y -= a.y; return *this; }
   ipoint operator + (ipoint a) const { a += (*this); return a; }
   ipoint operator - (ipoint a) const { ipoint p = (*this); p -= a; return p; }
+  bool operator == (const ipoint b) { return x == b.x && y == b.y; }
   };
 
 typedef long double ld;
