@@ -83,60 +83,64 @@ transmatrix get_matrix_at(sideinfo& si, ld x) {
     }
   }
 
+void construct_btd_for(sideinfo& si) {
+  si.matrixlist.clear();
+  si.rmatrixlist.clear();
+
+  if(si.parentid == si.id) {
+    si.need_btd = cspin > 0;
+    si.matrixlist.push_back(spin(cspin));
+    si.zero_shift = -si.animshift;
+    }
+  
+  else {      
+    auto& root = rootof(si);
+    auto& par = sides[si.parentid];
+    par.need_btd = true;
+    
+    ipoint ex0 = si.join;
+    ipoint ex1 = ex0 + ipoint(1, 0);
+    ipoint ex2 = ex0 + ipoint(0, 1);
+    
+    auto& ppts = *par.submap;
+
+    auto [old_x0, old_y0] = unband(ppts[ex0].x, par, 0);
+    auto [old_x1, old_y1] = unband(ppts[ex1].x, par, 0);
+    auto [old_x2, old_y2] = unband(ppts[ex2].x, par, 0);
+    
+    auto& epts = *si.submap;
+
+    auto [new_x0, new_y0] = unband(epts[ex0].x, si, 0);
+    auto [new_x1, new_y1] = unband(epts[ex1].x, si, 0);
+    auto [new_x2, new_y2] = unband(epts[ex2].x, si, 0);
+    
+    transmatrix T = get_matrix_at(par, old_x0);
+    
+    transmatrix mold, mnew;
+    set_column(mold, 0, equirectangular(0, old_y0));
+    set_column(mold, 1, equirectangular(old_x1 - old_x0, old_y1));
+    set_column(mold, 2, equirectangular(old_x2 - old_x0, old_y2));
+
+    set_column(mnew, 0, equirectangular(0, new_y0));
+    set_column(mnew, 1, equirectangular(new_x1 - new_x0, new_y1));
+    set_column(mnew, 2, equirectangular(new_x2 - new_x0, new_y2));
+      
+    T = mul(T, mul(mold, inverse(mnew)));
+    fixmatrix(T);
+    
+    si.matrixlist.push_back(T);
+    si.zero_shift = new_x0;
+    }
+  }
+
 void construct_btd() {
   static int p;
   p++;
-  for(auto& si: sides) {
-    
-    si.matrixlist.clear();
-    si.rmatrixlist.clear();
-
-    if(si.parentid == si.id) {
-      si.need_btd = cspin > 0;
-      si.matrixlist.push_back(spin(cspin));
-      si.zero_shift = -si.animshift;
-      }
-    
-    else {      
-      auto& root = rootof(si);
-      auto& par = sides[si.parentid];
-      par.need_btd = true;
-      
-      ipoint ex0 = si.join;
-      ipoint ex1 = ex0 + ipoint(1, 0);
-      ipoint ex2 = ex0 + ipoint(0, 1);
-      
-      auto& ppts = *par.submap;
-  
-      auto [old_x0, old_y0] = unband(ppts[ex0].x, par, 0);
-      auto [old_x1, old_y1] = unband(ppts[ex1].x, par, 0);
-      auto [old_x2, old_y2] = unband(ppts[ex2].x, par, 0);
-      
-      auto& epts = *si.submap;
-  
-      auto [new_x0, new_y0] = unband(epts[ex0].x, si, 0);
-      auto [new_x1, new_y1] = unband(epts[ex1].x, si, 0);
-      auto [new_x2, new_y2] = unband(epts[ex2].x, si, 0);
-      
-      transmatrix T = get_matrix_at(par, old_x0);
-      
-      transmatrix mold, mnew;
-      set_column(mold, 0, equirectangular(0, old_y0));
-      set_column(mold, 1, equirectangular(old_x1 - old_x0, old_y1));
-      set_column(mold, 2, equirectangular(old_x2 - old_x0, old_y2));
-  
-      set_column(mnew, 0, equirectangular(0, new_y0));
-      set_column(mnew, 1, equirectangular(new_x1 - new_x0, new_y1));
-      set_column(mnew, 2, equirectangular(new_x2 - new_x0, new_y2));
-        
-      T = mul(T, mul(mold, inverse(mnew)));
-      fixmatrix(T);
-      
-      si.matrixlist.push_back(T);
-      si.zero_shift = new_x0;
-      }
-    }
+  for(auto& si: sides) 
+    construct_btd_for(si);
   }
+
+ld btd_at = 2;
 
 cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& yval) {
 
@@ -152,7 +156,7 @@ cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& yval) {
     
     parent_changed:
 
-    for(int subid: csi->childsides) {
+    if(use_childsides) for(int subid: csi->childsides) {
       auto& nsi = sides[subid];
       auto& epts = *nsi.submap;
       
@@ -160,7 +164,7 @@ cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& yval) {
     
       auto [nx, ny] = unband(epts[py][px].x, nsi, 0);
       
-      if(nx > nsi.zero_shift + 2) {
+      if(nx > nsi.zero_shift) {
         x = nx; y = ny;
         csi = &nsi;
         goto parent_changed;

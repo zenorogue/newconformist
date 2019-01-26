@@ -83,6 +83,8 @@ triskeleo2.map: nconf
 triskeleo3.map: nconf
 	./nconf -mim triskele-flat.png -trim -9999 500 9999 9999 -cbi 50 550 774 777 -cm -sm triskeleo3.map
 
+# note: join points incorrect!
+
 drawt12o: nconf
 	./nconf \
 	  -lm triskele1.map -li rlyeh.png -zebra -period 6 -lmj triskele2.map 562 584 -ash 0.4 \

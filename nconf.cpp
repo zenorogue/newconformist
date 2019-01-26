@@ -40,6 +40,8 @@ int elim_order = 3;
 
 ld spinspeed;
 
+bool use_childsides = true;
+
 #include "mat.cpp"
 #include "zebra.cpp"
 
@@ -899,6 +901,8 @@ void klawisze() {
         auto& p = pts[mousey][mousex];
         printf("this point (%d,%d) is %lf %lf\n", mousex, mousey, double(p.x[0]), double(p.x[1]));
         }
+      
+      if(key == 'u') use_childsides = !use_childsides;
       
       if(key == 'm') mark_sides = !mark_sides;
       if(key == 'c') no_images = !no_images;

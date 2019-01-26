@@ -11,6 +11,8 @@ ipoint get_last_point(pointmap& ptmap, ipoint start) {
   return q.back();
   }
 
+ld frac(ld x) { return x - floor(x); }
+
 void auto_mapin() {
   single_side(0);
   auto outpixel = get_heart(ipoint{0,0});
@@ -43,68 +45,103 @@ void auto_mapin() {
   computemap(pts);
   
   measure(cside());
+  construct_btd_for(cside());
   
-  int later = 0;
+  again:
   
-  vector<ipoint> q;
+  vector<pair<ipoint, int>> q;
   for(int y=0; y<SY; y++) 
   for(int x=0; x<SX; x++) {
     auto xy = ipoint(x, y);
     auto& p = pts[xy];
     if(p.type != 1 || p.side != current_side) continue;
-    if(p.x[1] > 1e-3 && p.x[1] < 1-1e-3) p.type = 2, q.push_back(xy);
-    else later++;
+    
+    auto pxy = p.x;
+
+    auto csi = &cside();
+    auto sid = current_side;
+    parent_changed:
+
+    for(int subid: csi->childsides) {
+      auto& nsi = sides[subid];
+      auto& epts = *nsi.submap;
+      
+      if(epts[xy].type != 1) continue;
+    
+      if(epts[xy].x[0] / nsi.cscale[0] * M_PI > nsi.zero_shift) {
+        pxy = epts[xy].x;
+        csi = &nsi;
+        sid = subid;
+        goto parent_changed;
+        }
+      }
+    
+    if(pxy[1] > 1e-5 && pxy[1] < 1-1e-5) p.type = 2, q.emplace_back(xy, sid);
     }
-  
-  printf("later = %d in = %d\n", later, isize(q));
   
   int nextd = isize(q);
   int d = 0;
   for(int i=0; i<isize(q); i++) {
     if(i == nextd) d++, nextd = isize(q);
-    auto xy = q[i];
+    auto xy = q[i].first;
     for(auto k: dv) if(pts[k+xy].type == 1)
-      pts[k+xy].type = 2, q.push_back(k + xy);
+      pts[k+xy].type = 2, q.emplace_back(k + xy, q[i].second);
     }
 
   printf("d=%d until %d\n", d, nextd);
   
-  ipoint ending = q.back();
-  for(auto pt: q) pts[pt].type = 1;
+  ipoint ending = q.back().first;
+  int parent_side = q.back().second;
+  for(auto pt: q) pts[pt.first].type = 1;
   
   if(d >= 5) {
     auto& side = new_side(0);
-    side.parentid = current_side;
-    side.rootid = cside().rootid;
-    cside().childsides.push_back(side.id);
+    auto& parside = sides[parent_side];    
+    side.parentid = parent_side;
+    side.rootid = parside.rootid;
+    parside.childsides.push_back(side.id);
     side.submap = new pointmap;
     // side.join = ?
+    auto &ppts = *parside.submap;
     auto &epts = *side.submap;
     epts.resize2(SX, SY);
     
+    bool over = ppts[ending].x[1] > .5;
+    
     ld error = 1e9;
+    
+    ld low = 1e9;
+    
+    ipoint lowpoint;
     
     for(int y=0; y<SY; y++)
     for(int x=0; x<SX; x++) {
       auto xy = ipoint(x, y);
       auto& p = epts[xy];
-      auto& pold = pts[xy];
+      auto& pold = ppts[xy];
       p.side = side.id;
-      p.type = (pold.type == 1 && abs(pold.x[0] - pts[ending].x[0]) < cside().cscale[0]) ? 1 : 0;
+      p.type = (pold.type == 1 && intdif(pold.x[0] - ppts[ending].x[0]) < 3 * cside().cscale[0]) ? 1 : 0;
       
-      ld err = hypot(pold.x[0] - pts[ending].x[0], pold.x[1] - .5);
+      ld err = hypot(pold.x[0] - ppts[ending].x[0], pold.x[1] - (over ? .9 : .1));
       if(err < error) error = err, side.join = xy;
+      
+      ld nlow = frac(pold.x[0] - ppts[ending].x[0] + .5);
+      if(nlow < low) low = nlow, lowpoint = xy;
       }
     
-    printf("join = %d,%d ending = %d,%d\n", side.join.x, side.join.y, ending.x, ending.y);
+    printf("side = %d->%d->%d join = %d,%d ending = %d,%d\n", parside.rootid, parent_side, side.id, side.join.x, side.join.y, ending.x, ending.y);
 
-    auto [axy2, ad2] = boundary_point_near(epts, side.join);
+    auto [axy2, ad2] = boundary_point_near(epts, lowpoint);
     auto [bxy2, bd2] = boundary_point_near(epts, ending);
 
     printf("axy = %d,%d bxy = %d,%d\n", axy2.x, axy2.y, bxy2.x, bxy2.y);
   
     split_boundary(epts, axy2, bxy2, bd2^2);
     computemap(epts);
+    measure(side);
+    construct_btd_for(side);
+    
+    goto again;
     }
   }
 
