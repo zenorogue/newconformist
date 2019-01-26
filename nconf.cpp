@@ -402,7 +402,7 @@ int itc(int a) {
 
 ld find_equation(vector<equation>& v, datapoint& p) {
   auto seek = std::lower_bound(v.begin(), v.end(), equation{&p, -HUGE_VAL});
-  if(seek != p.eqs.end() && seek->first == &p) return seek->second;
+  if(seek != v.end() && seek->first == &p) return seek->second;
   return 0;
   }
 
