@@ -555,14 +555,14 @@ void computemap(pointmap& ptmap) {
     for(auto co: allpoints) {
       auto &p = ptmap[co];
       if(p.state != 1) continue;
-      if(text_progress) {
+      if(text_progress || draw_progress) {
         int cpct = citer * 1000 / size(allpoints);
         if(cpct != lastpct) {
           lastpct = cpct;
-          printf("  %d/1000 [%d]\n", cpct, size(p.eqs));
+          if(text_progress) printf("  %d/1000 [%d]\n", cpct, size(p.eqs));
           int nextt = SDL_GetTicks();
           if(nextt > lastt + 100) {
-            drawstates();
+            drawstates(ptmap);
             lastt = SDL_GetTicks();
             }
           }
