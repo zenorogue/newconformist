@@ -36,6 +36,9 @@ draw-map: nconf
 	./nconf \
 	  -lm elegant-cat-inside.map -chessmap 786 572 -draw -export chessmap.png
 
+draw-tree: nconf
+	./nconf -qt -scale 2 -mim triskele.png -mapin -li zebra.png -zebra -period 6 -draw
+
 spintest: nconf
 	./nconf \
 	  -lm elegant-cat-inside.map -li zebrabright.png -zebra -period 6 \

@@ -156,18 +156,18 @@ void createb_rectangle() {
     }
   }
 
-void split_boundary(ipoint axy, ipoint bxy, int d) {
+void split_boundary(pointmap& ptmap, ipoint axy, ipoint bxy, int d) {
 
-  pts[axy].type = 6;
+  ptmap[axy].type = 6;
 
   int phase = 5;
 
-  pts[bxy].type = 7;
+  ptmap[bxy].type = 7;
   bxy -= dv[d];
   
   for(int iter=0; iter<100000; iter++) {
     d &= 3;
-    auto& pt2 = pts[bxy + dv[d]];
+    auto& pt2 = ptmap[bxy + dv[d]];
     if(pt2.type == phase+2 || pt2.type == phase) d++;
     else if(pt2.type == 0) { pt2.type = phase; d++; }
     else if(pt2.type == 6 || pt2.type == 7) { phase--; if(phase == 3) break; }
@@ -177,7 +177,7 @@ void split_boundary(ipoint axy, ipoint bxy, int d) {
 
 ld hypot(ipoint a) { return hypot(a.x, a.y); }
 
-tuple<ipoint, int> boundary_point_near(ipoint cxy) {
+tuple<ipoint, int> boundary_point_near(pointmap& ptmap, ipoint cxy) {
   ld bestdist = 1e8;
   int ad;
   ipoint axy;
@@ -185,7 +185,7 @@ tuple<ipoint, int> boundary_point_near(ipoint cxy) {
   for(int x=1; x<SX-1; x++) for(int y=1; y<SY-1; y++) {
     ipoint xy(x, y);
     for(int d=0; d<4; d++)
-      if(pts[xy].type == 0 && pts[xy + dv[d]].type == 1) {
+      if(ptmap[xy].type == 0 && ptmap[xy + dv[d]].type == 1) {
         ld dist = hypot(xy-cxy);
         if(dist < bestdist) bestdist = dist, axy = xy, ad = d;
         }
@@ -232,11 +232,11 @@ void createb_circle() {
       else p.type = 7;
       }
     }
-  auto [axy1, ad] = boundary_point_near({0, SY/2});
-  auto [bxy1, bd] = boundary_point_near({SX-1, SY/2});
+  auto [axy1, ad] = boundary_point_near(pts, {0, SY/2});
+  auto [bxy1, bd] = boundary_point_near(pts, {SX-1, SY/2});
   printf("%d %d %d %d %d %d\n", axy1.x, axy1.y, ad, bxy1.x, bxy1.y, bd);
   
-  split_boundary(axy1, bxy1, bd^2);
+  split_boundary(pts, axy1, bxy1, bd^2);
   }
 
 int trim_x1 = 0, trim_y1 = 0, trim_x2 = 99999, trim_y2 = 99999;
@@ -336,10 +336,10 @@ void createb_inner(ipoint axy, ipoint bxy) {
       p.type = 0;
     }
   
-  auto [axy1, ad] = boundary_point_near(addmargin(axy));
-  auto [bxy1, bd] = boundary_point_near(addmargin(bxy));
+  auto [axy1, ad] = boundary_point_near(pts, addmargin(axy));
+  auto [bxy1, bd] = boundary_point_near(pts, addmargin(bxy));
   
-  split_boundary(axy1, bxy1, bd^2);
+  split_boundary(pts, axy1, bxy1, bd^2);
   }
 
 // Hilbert curve
@@ -373,7 +373,7 @@ void create_hilbert(int lev, int pix, int border) {
   pts[border-1][pix/2].type = 6;
   hilbert_recursive(0, 3, lev);
   connection(4);
-  split_boundary({pix/2, border-1}, {SX-1-pix/2, border-1}, 1);
+  split_boundary(pts, {pix/2, border-1}, {SX-1-pix/2, border-1}, 1);
   }
 
 void saveb(const string& s) {  
@@ -409,19 +409,19 @@ ld find_equation(vector<equation>& v, datapoint& p) {
   return 0;
   }
 
-void drawstates() {
+void drawstates(pointmap& ptmap) {
   do {
     if(!draw_progress) return;
     initGraph(SX, SY, "conformist", false);
     int statecolors[4] = {
       0x000080, 0x00FF00, 0x000000, 0x00FFFF };
   
-    auto& pt = zoomed ? pts[(mousey+zy)/4][(mousex+zx)/4] : pts[mousey][mousex];
-    printf("eqs = %d\n", isize(pt.eqs));
+    auto& pt = zoomed ? ptmap[(mousey+zy)/4][(mousex+zx)/4] : ptmap[mousey][mousex];
+    // printf("eqs = %d\n", isize(pt.eqs));
   
     for(int y=0; y<SY; y++)
     for(int x=0; x<SX; x++) {
-      auto& p = zoomed ? pts[(y+zy)/4][(x+zx)/4] : pts[y][x];
+      auto& p = zoomed ? ptmap[(y+zy)/4][(x+zx)/4] : ptmap[y][x];
       screen[y][x] = statecolors[p.state];
       part(screen[y][x], 2) = itc(isize(p.eqs));
       if(find_equation(pt.eqs, p)) part(screen[y][x], 2) = 0x80;
@@ -458,14 +458,14 @@ void drawstates() {
   
   }
 
-array<ipoint, 4> find_neighbors(ipoint xy) {
+array<ipoint, 4> find_neighbors(pointmap& ptmap, ipoint xy) {
   array<ipoint, 4> res;
   for(int i=0; i<4; i++) res[i] = xy + dv[i];
   
   int ax = xy.x, ay = xy.y;
   
   if(elim_order == 3) {
-    if((ax+ay) & 1) { pts[xy].pointorder = 1000; return res; }
+    if((ax+ay) & 1) { ptmap[xy].pointorder = 1000; return res; }
     tie(ax, ay) = make_pair(ax+ay + (1<<16), ax-ay + (1<<16));
     }
   
@@ -475,13 +475,13 @@ array<ipoint, 4> find_neighbors(ipoint xy) {
   while(!(ay&1)) ay >>= 1, ayv++;
   
   if(elim_order == 0 || elim_order == 3)
-    pts[xy].pointorder = 2000 + max(axv, ayv) * 1000 + (axv>ayv ? 500 : 0) + min(axv, ayv);
+    ptmap[xy].pointorder = 2000 + max(axv, ayv) * 1000 + (axv>ayv ? 500 : 0) + min(axv, ayv);
 
   if(elim_order == 1)
-    pts[xy].pointorder = xy.x + xy.y;
+    ptmap[xy].pointorder = xy.x + xy.y;
 
   if(elim_order == 2)
-    pts[xy].pointorder = xy.x + xy.y + ((xy.x ^ xy.y) & 1 ? 2000 : 0);
+    ptmap[xy].pointorder = xy.x + xy.y + ((xy.x ^ xy.y) & 1 ? 2000 : 0);
 
   return res;
   }
@@ -507,7 +507,7 @@ void computemap(pointmap& ptmap) {
       
       ipoint xy(x, y);
       
-      auto nei = find_neighbors(xy);
+      auto nei = find_neighbors(ptmap, xy);
 
       if(i == 0) {
         int xp = 0;
@@ -543,7 +543,7 @@ void computemap(pointmap& ptmap) {
     vector<ipoint> allpoints;
     for(int y=0; y<SY; y++) 
     for(int x=0; x<SX; x++) if(ptmap[y][x].state == 1) allpoints.push_back({x, y});
-    sort(allpoints.begin(), allpoints.end(), [] (auto p1, auto p2) { return ptmap[p1].pointorder < ptmap[p2].pointorder; });
+    sort(allpoints.begin(), allpoints.end(), [&ptmap] (auto p1, auto p2) { return ptmap[p1].pointorder < ptmap[p2].pointorder; });
     
     int lastt = SDL_GetTicks();
     printf("Gaussian elimination\n");
