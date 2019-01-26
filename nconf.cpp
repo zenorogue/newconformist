@@ -895,6 +895,11 @@ void klawisze() {
       if(key == '0') anim_speed = 0;
       if(key == 'r') anim_speed = -anim_speed;
       
+      if(key == 'i') {
+        auto& p = pts[mousey][mousex];
+        printf("this point (%d,%d) is %lf %lf\n", mousex, mousey, double(p.x[0]), double(p.x[1]));
+        }
+      
       if(key == 'm') mark_sides = !mark_sides;
       if(key == 'c') no_images = !no_images;
       if(key == 'q') 
