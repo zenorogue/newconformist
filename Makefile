@@ -32,6 +32,10 @@ draw: nconf
 	  -lm2 elegant-cat-inside.map -li reptiles.png -zebra -period 3 \
 	  -draw
 
+draw-map: nconf
+	./nconf \
+	  -lm elegant-cat-inside.map -chessmap 786 572 -draw -export chessmap.png
+
 spintest: nconf
 	./nconf \
 	  -lm elegant-cat-inside.map -li zebrabright.png -zebra -period 6 \
