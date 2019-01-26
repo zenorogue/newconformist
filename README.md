@@ -146,4 +146,6 @@ the `1`-`9` keys, `0` to stop, `r` to reverse.)
 
 `-bandlen`: when animating a band, tells you what parameters should be given to make a loop.
 
+`-chessmap <x> <y>`: instead of loading an image, display the hyperbolic straight line from <x1,y1> to <x2,y2>, and the orthogonal line passing throough <x,y>, with markers each 1 hyperbolic unit.
+
 `-q`: do not display the progress while computing maps. Also `-qt` does not display the progress in text, and `-qd` does not display the progress as a picture.

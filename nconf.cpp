@@ -29,6 +29,9 @@
 #include <queue>
 #include <complex>
 
+bool chessmap = false;
+ipoint chesspos;
+
 typedef std::complex<ld> cld;
 
 using namespace std;
@@ -739,6 +742,12 @@ int boundary_color = 0xFFFFFF;
 
 int bbnd = 100;
 
+ld intdif(ld z) {
+  z = z - floor(z);
+  if(z > .5) z = 1-z;
+  return z;
+  }
+
 void draw(bitmap &b) {
   construct_btd();
   b.belocked();
@@ -788,8 +797,41 @@ void draw(bitmap &b) {
     else if(no_images || !si.img.s) {
       int qsides = size(sides);
       auto& pix = b[y][x];
-      part(pix, 0) = int(255 & int(255 * pts[y][x].x[0]));
-      part(pix, 1) = int(255 & int(255 * pts[y][x].x[1]));
+      auto& pt = pts[y][x];
+      if(chessmap) {
+        auto ch = pts[chesspos];
+        static bool chess_shown;
+        if(!chess_shown) {
+          chess_shown = true;
+          printf("chess = %lf %lf\n", double(ch.x[0]), double(ch.x[1]));
+          printf("chess to band = %lf %lf\n", double(ch.x[0]), double(ch.x[1]));
+          }
+
+        ld y = pt.x[1];
+        y *= 2; y -= 1; // -1 .. 1
+        y *= M_PI / 2;
+        y = -2 * atanh(tan(y/2));
+        
+        int sca = 1;
+        
+        ld coshy = cosh(y);
+        
+        ld xx = (pt.x[0] - ch.x[0]) * M_PI /  si.cscale[0];
+        
+        xx *= sca; y *= sca;
+        
+        if(abs(y) < .1 || intdif(xx) < .05 / coshy || intdif(y) < .1 && intdif(xx) < .25 / coshy)
+          pix = 0;
+        else
+          pix = 0xFFFFFF;
+  
+        // pix = ((int(100 + sca * (pt.x[0] - ch.x[0]) / si.cscale[0]) + int(100 + sca /M_PI * y /* pt.x[1] */)) & 1) ? 0xFFFFFF : 0x0;
+        // pix = ((int(100 + M_PI * sca * (pt.x[0] - ch.x[0]) / si.cscale[0]) + int(100 + sca * y /* pt.x[1] */)) & 1) ? 0xFFFFFF : 0x0;
+        }
+      else {
+        part(pix, 0) = int(255 & int(255 * pt.x[0]));
+        part(pix, 1) = int(255 & int(255 * pt.x[1]));
+        }
       }
     else {
       ld yval = 0;
@@ -1083,6 +1125,10 @@ int main(int argc, char **argv) {
       int pix = atoi(next_arg());
       int border = atoi(next_arg());
       create_hilbert(lev, pix, border);
+      }
+    else if(s == "-chessmap") {
+      chessmap = true;
+      chesspos = next_arg_ipoint();
       }
     else if(s == "-eo") {
       elim_order = atoi(next_arg());
