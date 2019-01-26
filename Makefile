@@ -2,10 +2,10 @@
 #  // zebra: 6*fivecells
 #  // reptiles: 3*fivecells
 
-nconf: nconf.cpp mat.cpp zebra.cpp triangle.cpp btd.cpp spiral.cpp
+nconf: nconf.cpp mat.cpp zebra.cpp triangle.cpp btd.cpp spiral.cpp automapper.cpp
 	g++ nconf.cpp -o nconf -lgd -lSDL -O3 -std=c++1z
 
-nconf-debug: nconf.cpp mat.cpp zebra.cpp triangle.cpp btd.cpp
+nconf-debug: nconf.cpp mat.cpp zebra.cpp triangle.cpp btd.cpp spiral.cpp automapper.cpp
 	g++ nconf.cpp -o nconf-debug -lgd -lSDL -g -std=c++1z
 
 elegant-cat-outside.map: nconf
