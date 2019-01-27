@@ -660,7 +660,8 @@ void savemap(const string& fname) {
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
     fwrite(&p.x, sizeof(p.x), 1, f);
-    fwrite(&p.type, sizeof(p.type), 1, f);
+    int t = p.type;
+    fwrite(&t, sizeof(t), 1, f);
     }
   fclose(f);
   }
@@ -689,7 +690,8 @@ void loadmap(const string& fname) {
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
     fread(&p.x, sizeof(p.x), 1, f);
-    fread(&p.type, sizeof(p.type), 1, f);
+    int t;
+    fread(&t, sizeof(t), 1, f); p.type = t;
     if(p.type == 2) side.type = 1;
     p.side = 0;
     }
@@ -708,7 +710,9 @@ void loadmap2(const string& fname) {
   for(int x=0; x<SX; x++) {
     datapoint dp; 
     fread(&dp.x, sizeof(dp.x), 1, f);
-    fread(&dp.type, sizeof(dp.type), 1, f);
+    int t;
+    fread(&t, sizeof(t), 1, f);
+    dp.type = t;
     if(dp.type < 4 && dp.type > 0) {
       dp.side = side.id;
       pts[y][x] = dp;
