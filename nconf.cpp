@@ -42,6 +42,8 @@ ld spinspeed;
 
 bool use_childsides = true;
 
+bool view_error = false;
+
 #include "mat.cpp"
 #include "zebra.cpp"
 
@@ -780,6 +782,81 @@ ld intdif(ld z) {
   return z;
   }
 
+ld am[2][2];
+
+cpoint diskpoint(int x, int y) {
+  cpoint c = pts[y][x].x;
+  auto [vx,vy] = unband(c, sides[0], -sides[0].xcenter);
+  hyperpoint p = equirectangular(vx, vy);
+  cpoint pt = hyper_to_disk(p);
+  return pt;
+  }
+
+ld max_error;
+
+void compute_am() {
+
+  cpoint sum_x = {0, 0};
+  cpoint sum_y = {0, 0};
+  cpoint sum_xx = {0, 0};
+  cpoint sum_xy = {0, 0};
+  cpoint sum_yy = {0, 0};
+  
+  int n = 0;
+  
+  for(int cy=0; cy<SY; cy++)
+  for(int cx=0; cx<SX; cx++) {
+    auto& p = pts[cy][cx];
+    if(p.type != 1) continue;
+    auto y = diskpoint(cx, cy);
+    if(isnan(y[0]) || isnan(y[1]) || hypot(y[0], y[1]) > .9) continue;
+    cpoint x = { ld(cx), ld(cy) };
+    for(int i=0; i<2; i++) {
+      sum_x[i] += x[i];
+      sum_xx[i] += x[i] * x[i];
+      sum_y[i] += y[i];
+      sum_yy[i] += y[i] * y[i];
+      sum_xy[i] += x[i] * y[i];
+      }
+    n++;
+    }
+  
+  /*for(int a = 0; a < 5; a ++) {
+    cpoint x = { a, a };
+    cpoint y = { 2*a+3, 2*a+3 };
+    for(int i=0; i<2; i++) {
+      sum_x[i] += x[i];
+      sum_xx[i] += x[i] * x[i];
+      sum_y[i] += y[i];
+      sum_yy[i] += y[i] * y[i];
+      sum_xy[i] += x[i] * y[i];
+      n++;
+      }
+    }*/
+
+  for(int i=0; i<2; i++) {
+    am[1][i] = (sum_xy[i] - sum_x[i] * sum_y[i] / n) / (sum_xx[i] - sum_x[i] * sum_x[i] / n);
+    am[0][i] = (sum_y[i] - am[1][i] * sum_x[i]) / n;
+    printf("X %lf Y %lf XX %lf XY %lf am = %lf %lf n = %d\n", double(sum_x[i]), double(sum_y[i]), double(sum_xx[i]), double(sum_xy[i]), double(am[0][i]), double(am[1][i]), n);
+    }
+
+  for(int cy=0; cy<SY; cy++)
+  for(int cx=0; cx<SX; cx++) {
+    auto& p = pts[cy][cx];
+    if(p.type != 1) continue;
+    auto y = diskpoint(cx, cy);
+    if(isnan(y[0]) || isnan(y[1]) || hypot(y[0], y[1]) > .99999) continue;
+    cpoint x = { ld(cx), ld(cy) };
+    for(int i=0; i<2; i++) x[i] = x[i] * am[1][i] + am[0][i];
+    cpoint dif = x-y;
+    ld err = sqrt(dif|dif);
+    if(err > max_error)
+      max_error = err;
+    }
+  
+  printf("max error = %lf (%lf pixels)\n", double(max_error), double(max_error * SX / 2));  
+  }
+
 void draw(bitmap &b) {
   construct_btd();
   b.belocked();
@@ -859,6 +936,22 @@ void draw(bitmap &b) {
   
         // pix = ((int(100 + sca * (pt.x[0] - ch.x[0]) / si.cscale[0]) + int(100 + sca /M_PI * y /* pt.x[1] */)) & 1) ? 0xFFFFFF : 0x0;
         // pix = ((int(100 + M_PI * sca * (pt.x[0] - ch.x[0]) / si.cscale[0]) + int(100 + sca * y /* pt.x[1] */)) & 1) ? 0xFFFFFF : 0x0;
+        }
+      else if(view_error) {
+        cpoint c = pts[y][x].x;
+        auto [vx,vy] = unband(c, si, -si.xcenter);
+        hyperpoint p = equirectangular(vx, vy);
+        cpoint pt = hyper_to_disk(p);
+        cpoint bycoord;
+        bycoord[0] = am[1][0] * x + am[0][0];
+        bycoord[1] = am[1][1] * y + am[0][1];
+        
+        part(pix, 0) = 128 + 100 * (pt[0] - bycoord[0])  / max_error;
+        part(pix, 1) = 128 + 100 * (pt[1] - bycoord[1])  / max_error;
+        part(pix, 2) = 128 + 100 * hypot(pt[0] - bycoord[0], pt[1] - bycoord[1])  / max_error;
+        
+        if(x == mousex && y == mousey)
+          printf("is = %lf %lf should be = %lf %lf\n", double(pt[0]), double(pt[1]), double(bycoord[0]), double(bycoord[1]));
         }
       else {
         part(pix, 0) = int(255 & int(255 * pt.x[0]));
@@ -1209,6 +1302,11 @@ int main(int argc, char **argv) {
       }
     else if(s == "-mergesides")
       merge_sides();
+    else if(s == "-viewerror") {
+      view_error = true;
+      measure_if_needed();
+      compute_am();
+      }
     else if(s == "-joinparams") {
       join_epsilon = atof(next_arg());
       join_distance = atoi(next_arg());
