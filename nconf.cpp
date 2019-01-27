@@ -32,6 +32,8 @@
 bool chessmap = false;
 ipoint chesspos;
 
+int lined_out;
+
 typedef std::complex<ld> cld;
 
 using namespace std;
@@ -874,7 +876,18 @@ void draw(bitmap &b) {
     auto& p = pts[y][x];
 
     if(p.type == 0) {
+    
       b[y][x] = notypeside;
+
+      if(lined_out)
+      for(int ax=-1; ax<=1; ax++)
+      for(int ay=-1; ay<=1; ay++) {
+        int x1 = x + ax * lined_out;
+        int y1 = y + ay * lined_out;
+        if(x1 >= 0 && y1 >= 0 && x1 < SX && y1 < SY && pts[y1][x1].type)
+          b[y][x] = 0;
+        }
+
       continue;
       }
     
@@ -1302,6 +1315,10 @@ int main(int argc, char **argv) {
       }
     else if(s == "-mergesides")
       merge_sides();
+    else if(s == "-lineout")
+      lined_out = atoi(next_arg());
+    else if(s == "-notype")
+      notypeside = strtol(next_arg(), NULL, 16);
     else if(s == "-viewerror") {
       view_error = true;
       measure_if_needed();
