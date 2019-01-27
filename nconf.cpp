@@ -1209,6 +1209,15 @@ int main(int argc, char **argv) {
       }
     else if(s == "-mergesides")
       merge_sides();
+    else if(s == "-joinparams") {
+      join_epsilon = atof(next_arg());
+      join_distance = atoi(next_arg());
+      join_y = atof(next_arg());
+      }
+    else if(s == "-joinoff") {
+      join_epsilon = -1;
+      join_distance = 9999;
+      }
     else if(s == "-tm")
       triangle_mode = true;
     else die("unrecognized argument: " + s);

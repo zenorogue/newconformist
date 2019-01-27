@@ -150,6 +150,11 @@ the `1`-`9` keys, `0` to stop, `r` to reverse.)
 
 `-q`: do not display the progress while computing maps. Also `-qt` does not display the progress in text, and `-qd` does not display the progress as a picture.
 
+`-joinparam <eps> <pixels> <y>`: set the parameters for the branching algorithm. Branches are detected when the Y coordinate of the mapping is below eps or above 1-eps in distance greater
+than the given number of pixels. The branch merge point is chosen at the given y (or 1-y). The default values are: `-joinparam 1e-5 5 .1`.
+
+`-joinoff`: disables the branching algorithm.
+
 # Shapes
 
 `-rectangle <X> <Y> -cm`: prepare a XxY rectangle from mapping.

@@ -13,6 +13,10 @@ ipoint get_last_point(pointmap& ptmap, ipoint start) {
 
 ld frac(ld x) { return x - floor(x); }
 
+ld join_epsilon = 1e-5;
+int join_distance = 5;
+ld join_y = .1;
+
 void auto_joins() {
   measure(cside());
   construct_btd_for(cside());
@@ -48,7 +52,7 @@ void auto_joins() {
         }
       }
     
-    if(pxy[1] > 1e-5 && pxy[1] < 1-1e-5) p.type = 2, q.emplace_back(xy, sid);
+    if(pxy[1] > join_epsilon && pxy[1] < 1-join_epsilon) p.type = 2, q.emplace_back(xy, sid);
     }
   
   int nextd = isize(q);
@@ -71,7 +75,7 @@ void auto_joins() {
   int parent_side = q.back().second;
   for(auto pt: q) pts[pt.first].type = 1;
   
-  if(d >= 5) {
+  if(d >= join_distance) {
     auto& side = new_side(0);
     auto& parside = sides[parent_side];    
     side.parentid = parent_side;
@@ -99,7 +103,7 @@ void auto_joins() {
       p.side = side.id;
       p.type = (pold.type == 1 && intdif(pold.x[0] - ppts[ending].x[0]) < 3 * cside().cscale[0]) ? 1 : 0;
       
-      ld err = hypot(pold.x[0] - ppts[ending].x[0], pold.x[1] - (over ? .9 : .1));
+      ld err = hypot(pold.x[0] - ppts[ending].x[0], pold.x[1] - (over ? 1-join_y : join_y));
       if(err < error) error = err, side.join = xy;
       
       ld nlow = frac(pold.x[0] - ppts[ending].x[0] + .5);
