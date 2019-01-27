@@ -70,9 +70,27 @@ It needs quite a lot of manual assembly to find the coordinates of all the endpo
 See http://roguetemple.com/z/newconformist/ for sample image files (shapes and tilings). Tilings come from HyperRogue, the Elegant Cat Silhouette by GDJ comes from
 https://openclipart.org/detail/258901/elegant-cat-silhouette .
 
-# Options
+# Usage: quick start
 
-Newconformist is controlled via command line options. See the Makefile for the invocations used to create the sample image.
+Suppose your shape is in file `shape.png`, and you want to map it with the Zebra tiling, in `zebra.png`. Find the region you want to map in your shape, and coordinates of
+some point inside this region, say, (100,50), Then you can execute the algorithm and see the resulting mapping with the following command:
+
+* `make nconf` to compile
+* `./nconf -mim shape.png -mapat 100 50 -li zebra.png -zebra -period 6 -draw` to draw. (`-zebra -period 6` tells newconformist the period of the picture, so that it knows how to recenter
+it.)
+
+If you want to map all the regions (outside, inside...) in the picture, do the following commands
+
+* `./nconf -mim shape.png -mapall -sma shape.maps` will map all the regions and save the mappings in file `shape.maps`.
+* `./nconf -lma shape.maps` to list all the mapped regions ("sides") and their identifiers.
+* to draw the result, do e.g. `./nconf -lma shape.maps -side 0 -li zebra.png -zebra -period 6 -draw`. The part `-side 0 -li zebra.png -zebra -period 6` should be repeated for all the
+sides, preferably with changed images; the number 0 is side ID listed by the previous command.
+
+If you want to export the result to a file, replace `-draw` with `-export result.png`.
+
+# More options
+
+Newconformist is controlled via command line options. See the Makefile for the invocations used to create the sample image (although some of them are obsolete).
 The (*) signifies options which should be there but are not implemented yet (they would be rather easy to add).
 
 `-scale <scale>`: scale the loaded shapes down by the given factor. Useful for quick testing.
