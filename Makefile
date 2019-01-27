@@ -141,8 +141,8 @@ maze.maps: nconf
 
 draw-maze: nconf
 	./nconf -lma maze.maps \
-	 -side 0 -li zebra.png -zebra -period 6 -fix \
-	 -side 1 -li reptiles.png -zebra -period 3 -fix \
+	 -side 0 -li windy.png -zebra -period 9 -fix \
+	 -side 1 -li poincare.png -zebra -period 1 -fix \
 	 -side 7 -li zebra.png -zebra -period 6 \
 	 -draw -export big-maze-mapped.png
 
