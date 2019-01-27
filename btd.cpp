@@ -47,8 +47,6 @@ transmatrix inverse(const transmatrix& T) {
 
 int debugsi;
 
-bool need_btd;
-
 transmatrix get_matrix_at(sideinfo& si, ld x) {
   x -= si.zero_shift;
 
