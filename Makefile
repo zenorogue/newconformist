@@ -136,6 +136,16 @@ heart1-out2: nconf
           -export heart-out2.png
 	./nconf -lm postcard2.map -li zebrabright.png -zebra -period 6 -export postcard2.png
 
+maze.maps: nconf
+	./nconf -qt -scale 0.02 -margin 0 -mim maze.png -mapall -sma maze.maps
+
+draw-maze: nconf
+	./nconf -lma maze.maps \
+	 -side 0 -li zebra.png -zebra -period 6 -fix \
+	 -side 1 -li reptiles.png -zebra -period 3 -fix \
+	 -side 7 -li zebra.png -zebra -period 6 \
+	 -draw -export big-maze-mapped.png
+
 hilbert.map: nconf
 	./nconf -hilbert 3 64 2 -sb hmap.txt -cm -sm hilbert.map
 
