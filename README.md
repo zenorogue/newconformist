@@ -86,9 +86,13 @@ Default: 32.
 `-mapat <x> <y>`: Compute the conformal mapping for the region including pixel (x,y) (given in original coordinates). This region contains all the pixels of the same color
 as (x,y) and connected to it.
 
+`-mapall`: Map all regions in the picture.
+
 `-sma <file.map>`: save all the conformal mappings in the memory to a file.
 
 `-lma <file.map>`: load a file saved with `-sma`.
+
+`-side <id>`: specify the side that will be affected by the subsequent commands. The command `-lma` lists all the sides in the saved map file.
 
 `-li <tiling.png>`: tile the current shape with the given hyperbolic tiling. The tiling picture should be in the Poincaré disk model. Pictures generated
 by the "HQ shot" feature in HyperRogue's map editor work well (the periods assume that you have not moved nor rotated the screen). 
