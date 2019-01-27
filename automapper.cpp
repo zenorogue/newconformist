@@ -374,6 +374,7 @@ void load_all_maps(const string fname) {
       }
     else {
       p.rootid = sides[p.parentid].rootid;
+      sides[p.parentid].childsides.push_back(p.id);
       p.submap = new pointmap;
       auto &epts = *p.submap;
       epts.resize2(SX, SY);
