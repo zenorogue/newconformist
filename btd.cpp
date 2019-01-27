@@ -1,3 +1,6 @@
+// translate computed coordinates to Poincare disk coordinates
+// includes the algorithm for syncing the branched shapes (construct_btd)
+
 ld cspin;
 
 pair<ld, ld> unband(cpoint& c, sideinfo& si, ld shift) {

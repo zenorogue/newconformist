@@ -1,3 +1,4 @@
+// implementations of -mapat and -mapall
 
 ipoint get_last_point(pointmap& ptmap, ipoint start) {
   vector<ipoint> q;

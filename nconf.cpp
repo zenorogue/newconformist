@@ -51,12 +51,24 @@ bool view_error = false;
 
 int SX, SY;
 
-enum class ptype : char { outside, inside, inside_left_up, inside_left_down, top, bottom, left_inf, right_inf, marked };
+// Side types.
+// stype::standard is homeomorphic to disk
+// stype::ring is homeomorphic to ring
+// stype::fixed_ring is used for rings if we want to make the period divisible by the tesselation period
+// stpe::fake is used for found regions which have more than 1 hole
+
 enum class stype : int { standard, ring, fixed_ring, fake };
 
-bool inner(ptype t) { return int(t) > 0 && int(t) < 4; }
+// Point types.
+// For stype::standard, iside points are of type 'inside', and the boundary is: top, right_inf, bottom, left_inf.
+// For stype::ring, the boundary is top (external) and bottom (internal), and the ring is split into three inside_* subtypes.
 
+enum class ptype : char { outside, inside, inside_left_up, inside_left_down, top, bottom, left_inf, right_inf, marked };
+
+bool inner(ptype t) { return int(t) > 0 && int(t) < 4; }
 bool infinitary(ptype t) { return int(t) >= 6; }
+
+// the four directions
 
 ipoint dv[4] = { ipoint(1, 0), ipoint(0, -1), ipoint(-1, 0), ipoint(0, 1) };  
 
@@ -65,9 +77,12 @@ void resize_pt();
 bool draw_progress = true;
 bool text_progress = true;
 
+// the bitmap used for the shape (called 'heart' because heart was the first bitmap shape)
 bitmap heart;
 
 typedef pair<struct datapoint*, ld> equation;
+
+// information about a pixel
 
 struct datapoint {
   cpoint x;
@@ -90,15 +105,17 @@ typedef vector2<datapoint> pointmap;
 
 pointmap pts;
 
+// information about a side
+
 struct sideinfo {
   bitmap img;
   vector<bitmap> img_band;
-  cpoint cscale;
+  cpoint cscale;     // cscale[0] says how we should rescale the X coordinates -- we should divide them by cscale[0]
   ipoint inner_point;
   ld xcenter;
-  ld period;
-  ld period_unit;
-  ld animshift;
+  ld period;         // period in band units
+  ld period_unit;    // period unit (changed e.g. with -zebra)
+  ld animshift;      // add this to the X coordinates
   vector<transmatrix> period_matrices;
   stype type;
   int id;
@@ -159,6 +176,8 @@ sideinfo& csideroot() { return rootof(cside()); }
 
 int sqr(int a) { return a*a; }
 
+// create a rectangular shape
+
 void createb_rectangle() {
   single_side(stype::standard);
   resize_pt();
@@ -175,6 +194,10 @@ void createb_rectangle() {
       }
     }
   }
+
+// given the points supposed to become left_inf and right_inf, and
+// the starting direction, split the rest of the boundary to
+// top and bottom.
 
 void split_boundary(pointmap& ptmap, ipoint axy, ipoint bxy, int d) {
 
@@ -201,6 +224,8 @@ void split_boundary(pointmap& ptmap, ipoint axy, ipoint bxy, int d) {
 
 ld hypot(ipoint a) { return hypot(a.x, a.y); }
 
+// find the point on the boundary nearest to cxy
+
 tuple<ipoint, int> boundary_point_near(pointmap& ptmap, ipoint cxy) {
   ld bestdist = 1e8;
   int ad;
@@ -209,15 +234,18 @@ tuple<ipoint, int> boundary_point_near(pointmap& ptmap, ipoint cxy) {
   for(int x=1; x<SX-1; x++) for(int y=1; y<SY-1; y++) {
     ipoint xy(x, y);
     for(int d=0; d<4; d++)
-      if(ptmap[xy].type == 0 && ptmap[xy + dv[d]].type == 1) {
+      if(ptmap[xy].type == ptype::outside && ptmap[xy + dv[d]].type == ptype::inside) {
         ld dist = hypot(xy-cxy);
         if(dist < bestdist) bestdist = dist, axy = xy, ad = d;
         }
     }
   
+  printf("bestdist = %lf %d,%d .. %d.%d\n", double(bestdist), cxy.x, cxy.y, axy.x, axy.y);
+  
   return make_tuple(axy, ad);
   }
 
+// compute SX and SY based on heart
 void set_SXY(bitmap& heart) {
   int newSX = heart.s->w / scalex + marginx + marginx;
   if(newSX < SX) 
@@ -238,6 +266,8 @@ void load_image_for_mapping(const string& fname) {
   set_SXY(heart);
   }
 
+// create a circular shape
+
 void createb_circle() {
   single_side(stype::standard);
   resize_pt();
@@ -257,6 +287,8 @@ void createb_circle() {
   split_boundary(pts, axy1, bxy1, bd^2);
   }
 
+// trimming (obsolete)
+
 int trim_x1 = 0, trim_y1 = 0, trim_x2 = 99999, trim_y2 = 99999;
 
 void trim(int x1, int y1, int x2, int y2) {
@@ -265,6 +297,8 @@ void trim(int x1, int y1, int x2, int y2) {
   trim_x2 = x2;
   trim_y2 = y2;
   }
+
+// translate bitmap coordinates to internal coordinates (taking margin and scale into account)
 
 ipoint unmargin(ipoint xy) {
   return ipoint((xy.x-marginx)*scalex, (xy.y-marginy)*scaley);
@@ -277,6 +311,8 @@ ipoint addmargin(ipoint xy) {
 unsigned& get_heart(ipoint xy) {
   return heart[unmargin(xy)];
   }
+
+// prepare a ring for mapping, including the given point
 
 void createb_outer(ipoint cxy) {
   create_side(stype::ring);
@@ -335,6 +371,8 @@ void createb_outer(ipoint cxy) {
     }
   }
 
+// prepare a stype::standard for mapping, including the given point
+
 void createb_inner(ipoint axy, ipoint bxy) {
   create_side(stype::standard);
 
@@ -366,7 +404,7 @@ void createb_inner(ipoint axy, ipoint bxy) {
   split_boundary(pts, axy1, bxy1, bd^2);
   }
 
-// Hilbert curve
+// create the Hilbert curve shape
 
 void create_hilbert(int lev, int pix, int border) {
   single_side(stype::standard);
@@ -413,6 +451,7 @@ void saveb(const string& s) {
 
 int mousex, mousey;
 
+// 'unofficial' experiments that newconformist has been used for
 #include "triangle.cpp"
 #include "spiral.cpp"
 
@@ -432,6 +471,8 @@ ld find_equation(vector<equation>& v, datapoint& p) {
   if(seek != v.end() && seek->first == &p) return seek->second;
   return 0;
   }
+
+// draw the state of computation during mapping
 
 void drawstates(pointmap& ptmap) {
   do {
@@ -515,6 +556,8 @@ array<ipoint, 4> find_neighbors(pointmap& ptmap, ipoint xy) {
 
   return res;
   }
+
+// compute the mapping, after every pixel/datapoint has been given a type
 
 void computemap(pointmap& ptmap) {
 
@@ -797,6 +840,8 @@ ld intdif(ld z) {
   return z;
   }
 
+// the following routines are for -viewerror
+
 ld am[2][2];
 
 cpoint diskpoint(int x, int y) {
@@ -871,6 +916,8 @@ void compute_am() {
   
   printf("max error = %lf (%lf pixels)\n", double(max_error), double(max_error * SX / 2));  
   }
+
+// draw the result image (on the given bitmap, which could be the screen)
 
 void draw(bitmap &b) {
   construct_btd();
@@ -1012,6 +1059,8 @@ ld anim_speed;
 
 bool break_loop = false;
 
+// handle keys after drawing the result image
+
 void klawisze() {
   SDL_Event event;
   SDL_Delay(1);
@@ -1083,6 +1132,8 @@ void load_image_band(const string& fname) {
   }
 
 bool need_measure = true;
+
+// this mostly computes the cscale for the given side
 
 void measure(sideinfo& si) {
   
