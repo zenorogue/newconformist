@@ -146,6 +146,15 @@ draw-maze: nconf
 	 -side 7 -li zebra.png -zebra -period 6 \
 	 -draw -export big-maze-mapped.png
 
+letter-e.maps: nconf
+	./nconf -qt -scale 0.5 -joinoff -mim letter-e.png -mapat 185 229 -sma letter-e.maps
+
+draw-letter-e: nconf #letter-e.maps
+	./nconf -lma letter-e.maps \
+	  -side 1 -li zebra.png -zebra -period 6 \
+	  -side 0 -li reptiles.png -zebra -period 3 -fix \
+	  -draw
+
 hilbert.map: nconf
 	./nconf -hilbert 3 64 2 -sb hmap.txt -cm -sm hilbert.map
 
