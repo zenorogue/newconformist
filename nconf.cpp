@@ -1079,7 +1079,7 @@ int main(int argc, char **argv) {
   auto next_arg_ipoint = [&] () { int x = atoi(next_arg()); int y = atoi(next_arg()); return ipoint(x, y); };
   while(i < argc) {
     string s = next_arg();
-    if(s == "-scale") scalex = scaley = atoi(next_arg());
+    if(s == "-scale") scalex = scaley = atof(next_arg());
     else if(s == "-margin") marginx = marginy = atoi(next_arg());
     else if(s == "-rectangle") {
       SX = atoi(next_arg());
