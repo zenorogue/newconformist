@@ -667,7 +667,7 @@ void savemap(const string& fname) {
   }
 
 void merge_sides() {
-  if(current_side > 0) {
+  if(current_side >= 0) {
     for(int y=0; y<SY; y++) 
     for(int x=0; x<SX; x++) {
       auto xy = ipoint(x, y);

@@ -104,7 +104,7 @@ void auto_joins() {
       p.type = (pold.type == 1 && intdif(pold.x[0] - ppts[ending].x[0]) < 3 * cside().cscale[0]) ? 1 : 0;
       
       ld err = hypot(pold.x[0] - ppts[ending].x[0], pold.x[1] - (over ? 1-join_y : join_y));
-      if(err < error) error = err, side.join = xy;
+      if(p.type == 1 && err < error) error = err, side.join = xy;
       
       ld nlow = frac(pold.x[0] - ppts[ending].x[0] + .5);
       if(nlow < low && p.type == 1) low = nlow, lowpoint = xy;
