@@ -990,7 +990,12 @@ void draw(bitmap &b) {
     }
 
   if(mark_sides)
-    for(auto& si: sides) b[si.join] = rand();
+    for(auto& si: sides) {
+      int c = rand();
+      b[si.join] = c;
+      for(auto k: dv) 
+        b[si.join+k] = c;
+      }
   b.draw();
   }
 
