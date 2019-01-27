@@ -50,7 +50,7 @@ int debugsi;
 transmatrix get_matrix_at(sideinfo& si, ld x) {
   x -= si.zero_shift;
 
-  if(si.type == 2) {
+  if(si.type == stype::fixed_ring) {
     ld d = si.period;
     x -= si.xcenter / si.cscale[0];
     while(x > d/2) x -= d;
@@ -153,12 +153,12 @@ cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& yval) {
     auto [x,y] = unband(c, *csi, 0);
     
     parent_changed:
-
+        
     if(use_childsides) for(int subid: csi->childsides) {
       auto& nsi = sides[subid];
       auto& epts = *nsi.submap;
       
-      if(epts[py][px].type != 1) continue;
+      if(epts[py][px].type != ptype::inside) continue;
     
       auto [nx, ny] = unband(epts[py][px].x, nsi, 0);
       

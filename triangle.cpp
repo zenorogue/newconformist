@@ -1,5 +1,5 @@
 void create_triangle(int edgelength) {
-  single_side(0);
+  single_side(stype::standard);
   SX = edgelength * 3;
   SY = int(edgelength * sqrt(3));
   int base = SY * 3 / 4;
@@ -7,9 +7,9 @@ void create_triangle(int edgelength) {
   for(int y=0; y<SY; y++) 
   for(int x=0; x<SX; x++) {
     pts[y][x].side = 0;
-    pts[y][x].type = 0;
+    pts[y][x].type = ptype::outside;
     if(y <= base && y - abs(x-SX/2) * sqrt(3) >= SY/4)
-      pts[y][x].type = 1;
+      pts[y][x].type = ptype::inside;
     }
   split_boundary(pts, ipoint(SX/2, base+1), ipoint(SX/2, SY/4-1), 1);
   }
@@ -74,7 +74,7 @@ void draw_triangle(bitmap& b) {
     
     auto& p = pts[dy][dx];    
     // printf("=> done %d\n", p.type);
-    if(p.type != 1) continue;
+    if(p.type != ptype::inside) continue;
     goodside = &sides[p.side];
     auto dc = band_to_disk_basic(p.x, *goodside);
     auto cdc = cld(dc[0], dc[1]);

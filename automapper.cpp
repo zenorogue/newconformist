@@ -1,13 +1,13 @@
 
 ipoint get_last_point(pointmap& ptmap, ipoint start) {
   vector<ipoint> q;
-  ptmap[start].type = 2; q.push_back(start);
+  ptmap[start].type = ptype::marked; q.push_back(start);
   for(int i=0; i<isize(q); i++) {
     auto xy = q[i];
-    for(auto k: dv) if(ptmap[k+xy].type == 1)
-      ptmap[k+xy].type = 2, q.push_back(k + xy);
+    for(auto k: dv) if(ptmap[k+xy].type == ptype::inside)
+      ptmap[k+xy].type = ptype::marked, q.push_back(k + xy);
     }
-  for(auto pt: q) ptmap[pt].type = 1;
+  for(auto pt: q) ptmap[pt].type = ptype::inside;
   return q.back();
   }
 
@@ -30,7 +30,7 @@ void auto_joins() {
   for(int x=0; x<SX; x++) {
     auto xy = ipoint(x, y);
     auto& p = pts[xy];
-    if(p.type != 1 || p.side != current_side) continue;
+    if(p.type != ptype::inside || p.side != current_side) continue;
     
     auto pxy = p.x;
 
@@ -42,7 +42,7 @@ void auto_joins() {
       auto& nsi = sides[subid];
       auto& epts = *nsi.submap;
       
-      if(epts[xy].type != 1) continue;
+      if(epts[xy].type != ptype::inside) continue;
     
       if(epts[xy].x[0] / nsi.cscale[0] * M_PI > nsi.zero_shift) {
         pxy = epts[xy].x;
@@ -52,7 +52,7 @@ void auto_joins() {
         }
       }
     
-    if(pxy[1] > join_epsilon && pxy[1] < 1-join_epsilon) p.type = 2, q.emplace_back(xy, sid);
+    if(pxy[1] > join_epsilon && pxy[1] < 1-join_epsilon) p.type = ptype::marked, q.emplace_back(xy, sid);
     }
   
   int nextd = isize(q);
@@ -60,8 +60,8 @@ void auto_joins() {
   for(int i=0; i<isize(q); i++) {
     if(i == nextd) d++, nextd = isize(q);
     auto xy = q[i].first;
-    for(auto k: dv) if(pts[k+xy].type == 1)
-      pts[k+xy].type = 2, q.emplace_back(k + xy, q[i].second);
+    for(auto k: dv) if(pts[k+xy].type == ptype::inside)
+      pts[k+xy].type = ptype::marked, q.emplace_back(k + xy, q[i].second);
     }
 
   printf("d=%d until %d\n", d, nextd);
@@ -73,10 +73,10 @@ void auto_joins() {
     }
   last_points.push_back(ending);
   int parent_side = q.back().second;
-  for(auto pt: q) pts[pt.first].type = 1;
+  for(auto pt: q) pts[pt.first].type = ptype::inside;
   
   if(d >= join_distance) {
-    auto& side = new_side(0);
+    auto& side = new_side(stype::standard);
     auto& parside = sides[parent_side];    
     side.parentid = parent_side;
     side.rootid = parside.rootid;
@@ -101,13 +101,16 @@ void auto_joins() {
       auto& p = epts[xy];
       auto& pold = ppts[xy];
       p.side = side.id;
-      p.type = (pold.type == 1 && intdif(pold.x[0] - ppts[ending].x[0]) < 3 * cside().cscale[0]) ? 1 : 0;
+      p.type = (pold.type == ptype::inside && intdif(pold.x[0] - ppts[ending].x[0]) < 3 * cside().cscale[0]) ? ptype::inside : ptype::outside;
       
-      ld err = hypot(pold.x[0] - ppts[ending].x[0], pold.x[1] - (over ? 1-join_y : join_y));
-      if(p.type == 1 && err < error) error = err, side.join = xy;
+      if(p.type == ptype::inside) {
+       
+        ld err = hypot(pold.x[0] - ppts[ending].x[0], pold.x[1] - (over ? 1-join_y : join_y));
+        if(err < error) error = err, side.join = xy;
       
-      ld nlow = frac(pold.x[0] - ppts[ending].x[0] + .5);
-      if(nlow < low && p.type == 1) low = nlow, lowpoint = xy;
+        ld nlow = frac(pold.x[0] - ppts[ending].x[0] + .5);
+        if(nlow < low) low = nlow, lowpoint = xy;
+        }
       }
     
     printf("side = %d->%d->%d join = %d,%d ending = %d,%d\n", parside.rootid, parent_side, side.id, side.join.x, side.join.y, ending.x, ending.y);
@@ -128,7 +131,7 @@ void auto_joins() {
   }
 
 void auto_map_at(ipoint at) {
-  current_side = new_side(0).id;
+  current_side = new_side(stype::standard).id;
   cside().inner_point = at;
   auto atpixel = get_heart(at);
 
@@ -137,11 +140,11 @@ void auto_map_at(ipoint at) {
     auto xy = ipoint(x, y);
     auto& p = pts[xy];
     p.baktype = p.type;
-    p.type = 0;
+    p.type = ptype::outside;
     }
   
   vector<ipoint> inpoints;
-  pts[at].type = 1;
+  pts[at].type = ptype::inside;
   inpoints.push_back(at);
   
   auto isin = [atpixel] (ipoint xy) {
@@ -158,8 +161,8 @@ void auto_map_at(ipoint at) {
       auto xy2 = xy + k;
       if(isin(xy2)) {
         chi1++;
-        if(pts[xy2].type == 0)
-          pts[xy2].type = 1, inpoints.push_back(xy2);
+        if(pts[xy2].type == ptype::outside)
+          pts[xy2].type = ptype::inside, inpoints.push_back(xy2);
         }
       }
     if(isin(xy + ipoint(1,0)) && isin(xy + ipoint(0,1)) && isin(xy + ipoint(1,1)))
@@ -177,9 +180,8 @@ void auto_map_at(ipoint at) {
   printf("chi (%d,%d,%d), number of holes = %d\n", chi0, chi1, chi2, holes);  
   
   if(holes >= 2) {
-    cside().type = 3;
+    cside().type = stype::fake;
     merge_sides();
-    printf("after holes: type = %d\n", pts[10][10].type);
     return;
     }
   
@@ -198,10 +200,10 @@ void auto_map_at(ipoint at) {
     }
   
   if(holes == 1) {
-    cside().type = 1;
+    cside().type = stype::ring;
     inpoints.clear();
     inpoints.emplace_back(0,0);
-    pts[0][0].type = 4;
+    pts[0][0].type = ptype::top;
     
     for(int i=0; i<isize(inpoints); i++) {
       auto xy = inpoints[i];
@@ -209,31 +211,31 @@ void auto_map_at(ipoint at) {
         auto xy2 = xy + k;
         if(xy2.x < 0 || xy2.y < 0 || xy2.x >= SX || xy2.y >= SY) continue;
         if(isin(xy2)) continue;
-        if(pts[xy2].type == 0)
-          pts[xy2].type = 4, inpoints.push_back(xy2);
+        if(pts[xy2].type == ptype::outside)
+          pts[xy2].type = ptype::top, inpoints.push_back(xy2);
         }
       }
     
     for(int y=0; y<SY; y++)
     for(int x=0; x<SX; x++)
-      if(pts[y][x].type == 0)
-        pts[y][x].type = 5;
+      if(pts[y][x].type == ptype::outside)
+        pts[y][x].type = ptype::bottom;
 
     ipoint splitat;
     for(int y=0; y<SY; y++)
     for(int x=0; x<SX; x++)
-      if(pts[y][x].type == 5 && pts[y][x-1].type == 1) {
+      if(pts[y][x].type == ptype::bottom && pts[y][x-1].type == ptype::inside) {
         splitat = ipoint(x, y);
         break;
         }
 
     for(int y=0; y<SY; y++)
     for(int x=0; x<=splitat.x; x++)
-      if(pts[y][x].type == 1) {
+      if(pts[y][x].type == ptype::inside) {
          if(y < splitat.y)
-           pts[y][x].type = 2;
+           pts[y][x].type = ptype::inside_left_up;
          else
-           pts[y][x].type = 3;
+           pts[y][x].type = ptype::inside_left_down;
         }
     }
 
@@ -252,7 +254,7 @@ void drawsides() {
     for(int y=0; y<SY; y++)
     for(int x=0; x<SX; x++) {
       screen[y][x] = // ((x+y)&1) ? pts[y][x].side * 0x147931 : 
-        pts[y][x].type ? 0xFFFFFF : 0;
+        (pts[y][x].type != ptype::outside) ? 0xFFFFFF : 0;
       }
     screen.draw();
     
@@ -287,22 +289,14 @@ void drawsides() {
 void auto_map_all() {
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++)
-    pts[y][x].type = 0;
+    pts[y][x].type = ptype::outside;
 
   for(int y=2; y<SY-2; y++)
   for(int x=2; x<SX-2; x++)
-    if(pts[y][x].type == 0 && get_heart({x,y}) == get_heart({x+1, y}) && pts[y][x+1].type == 0) {
+    if(pts[y][x].type == ptype::outside && get_heart({x,y}) == get_heart({x+1, y}) && pts[y][x+1].type == ptype::outside) {
       printf("Mapping (%d,%d)\n", x, y);
       auto_map_at(ipoint(x, y));  
       }
-  }
-
-template<class T> void save(FILE *f, const T& x) {
-  fwrite(&x, sizeof(T), 1, f);
-  }
-
-template<class T> void load(FILE *f, T& x) {
-  fread(&x, sizeof(T), 1, f);
   }
 
 void save_all_maps(const string fname) {
@@ -318,7 +312,7 @@ void save_all_maps(const string fname) {
     auto& p = pts[y][x];
     save(f, p.type);
     save(f, p.side);
-    if(p.type > 0 && p.type < 4)
+    if(inner(p.type))
       save(f, p.x);
     }
   
@@ -334,7 +328,7 @@ void save_all_maps(const string fname) {
         auto& p = epts[y][x];
         save(f, p.type);
         save(f, p.side);
-        if(p.type > 0 && p.type < 4)
+        if(inner(p.type))
           save(f, p.x);
         }
       }
@@ -351,14 +345,14 @@ void load_all_maps(const string fname) {
   int nsides;
   load(f, nsides);
   sides.clear();
-  for(int i=0; i<nsides; i++) new_side(0);
+  for(int i=0; i<nsides; i++) new_side(stype::standard);
   
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
     load(f, p.type);
     load(f, p.side);
-    if(p.type > 0 && p.type < 4)
+    if(inner(p.type))
       load(f, p.x);
     }
   
@@ -370,7 +364,7 @@ void load_all_maps(const string fname) {
     string sidetypenames[4] = { "standard", "ring", "fixed ring", "illegal" };
     if(p.parentid == p.id) {
       p.rootid = p.id;
-      printf("Side %d: %s at (%d,%d)\n", p.id, sidetypenames[p.type].c_str(), p.inner_point.x, p.inner_point.y);
+      printf("Side %d: %s at (%d,%d)\n", p.id, sidetypenames[int(p.type)].c_str(), p.inner_point.x, p.inner_point.y);
       }
     else {
       p.rootid = sides[p.parentid].rootid;
@@ -383,7 +377,7 @@ void load_all_maps(const string fname) {
         auto& p = epts[y][x];
         load(f, p.type);
         load(f, p.side);
-        if(p.type > 0 && p.type < 4)
+        if(inner(p.type))
           load(f, p.x);
         }
       int par = p.id;

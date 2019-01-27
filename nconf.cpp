@@ -51,6 +51,13 @@ bool view_error = false;
 
 int SX, SY;
 
+enum class ptype : char { outside, inside, inside_left_up, inside_left_down, top, bottom, left_inf, right_inf, marked };
+enum class stype : int { standard, ring, fixed_ring, fake };
+
+bool inner(ptype t) { return int(t) > 0 && int(t) < 4; }
+
+bool infinitary(ptype t) { return int(t) >= 6; }
+
 ipoint dv[4] = { ipoint(1, 0), ipoint(0, -1), ipoint(-1, 0), ipoint(0, 1) };  
 
 void resize_pt();
@@ -64,7 +71,8 @@ typedef pair<struct datapoint*, ld> equation;
 
 struct datapoint {
   cpoint x;
-  char type, baktype, state;
+  ptype type, baktype;
+  char state;
   int side=0;
   int pointorder;
   ld bonus;
@@ -92,7 +100,7 @@ struct sideinfo {
   ld period_unit;
   ld animshift;
   vector<transmatrix> period_matrices;
-  int type;
+  stype type;
   int id;
   vector<int> childsides;
   bool need_btd;
@@ -119,7 +127,7 @@ void resize_pt() {
 
 int current_side;
 
-sideinfo& new_side(int type) {
+sideinfo& new_side(stype type) {
   int N = size(sides);
   sides.emplace_back();
   auto& side = sides.back();
@@ -133,14 +141,14 @@ sideinfo& new_side(int type) {
   return side;
   }
 
-sideinfo& single_side(int type) {
+sideinfo& single_side(stype type) {
   sides.clear();
   auto& side = new_side(type);
   current_side = side.id;
   return side;
   }
 
-sideinfo& create_side(int type) {
+sideinfo& create_side(stype type) {
   auto& side = new_side(type);
   current_side = side.id;
   return side;
@@ -152,38 +160,42 @@ sideinfo& csideroot() { return rootof(cside()); }
 int sqr(int a) { return a*a; }
 
 void createb_rectangle() {
-  single_side(0);
+  single_side(stype::standard);
   resize_pt();
   for(int y=0; y<SY; y++) 
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
-    p.type = 1;
+    p.type = ptype::inside;
     p.side = 0;
     if(y == 0 || y == SY-1 || x == 0 || x == SX-1) {
-      if(y < SY/2) p.type = 4;
-      else if(y > SY/2) p.type = 5;
-      else if(x == 0) p.type = 6;
-      else p.type = 7;
+      if(y < SY/2) p.type = ptype::top;
+      else if(y > SY/2) p.type = ptype::bottom;
+      else if(x == 0) p.type = ptype::left_inf;
+      else p.type = ptype::right_inf;
       }
     }
   }
 
 void split_boundary(pointmap& ptmap, ipoint axy, ipoint bxy, int d) {
 
-  ptmap[axy].type = 6;
+  ptmap[axy].type = ptype::left_inf;
 
-  int phase = 5;
+  ptype phase = ptype::bottom;
 
-  ptmap[bxy].type = 7;
+  ptmap[bxy].type = ptype::right_inf;
   bxy -= dv[d];
   
   for(int iter=0; iter<100000; iter++) {
     d &= 3;
     auto& pt2 = ptmap[bxy + dv[d]];
-    if(pt2.type == phase+2 || pt2.type == phase) d++;
-    else if(pt2.type == 0) { pt2.type = phase; d++; }
-    else if(pt2.type == 6 || pt2.type == 7) { phase--; if(phase == 3) break; }
-    else if(pt2.type == 1) { bxy += dv[d]; d--; }
+    ptype nphase = ptype(int(phase)+2); // ugly
+    if(pt2.type == nphase || pt2.type == phase) d++;
+    else if(pt2.type == ptype::outside) { pt2.type = phase; d++; }
+    else if(infinitary(pt2.type)) { 
+      if(phase == ptype::bottom) phase = ptype::top;
+      else break; 
+      }
+    else if(pt2.type == ptype::inside) { bxy += dv[d]; d--; }
     }
   }
 
@@ -227,22 +239,16 @@ void load_image_for_mapping(const string& fname) {
   }
 
 void createb_circle() {
-  single_side(0);
+  single_side(stype::standard);
   resize_pt();
   for(int y=0; y<SY; y++) 
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
-    p.type = 1;
+    p.type = ptype::inside;
     p.side = 0;
     int u = sqr(2 * x - SX + 1) + sqr(2 * y - SY + 1);
     if(u >= sqr(min(SY, SX) - 5))
-      p.type = 0;
-    if(y == 0 || y == SY-1 || x == 0 || x == SX-1) {
-      if(y < SY/2) p.type = 4;
-      else if(y > SY/2) p.type = 5;
-      else if(x == 0) p.type = 6;
-      else p.type = 7;
-      }
+      p.type = ptype::outside;
     }
   auto [axy1, ad] = boundary_point_near(pts, {0, SY/2});
   auto [bxy1, bd] = boundary_point_near(pts, {SX-1, SY/2});
@@ -273,7 +279,7 @@ unsigned& get_heart(ipoint xy) {
   }
 
 void createb_outer(ipoint cxy) {
-  create_side(1);
+  create_side(stype::ring);
   
   cside().inner_point = cxy;
   auto inpixel = get_heart(cxy);
@@ -290,31 +296,31 @@ void createb_outer(ipoint cxy) {
     p.baktype = p.type;
 
     if(x == 0) {
-      p.type = 4;
+      p.type = ptype::top;
       boundary.emplace(1, y);
       }
     else if(y == 0) {
-      p.type = 4;
+      p.type = ptype::top;
       boundary.emplace(x, 1);
       }
     else if(x == SX-1) {
-      p.type = 4;
+      p.type = ptype::top;
       boundary.emplace(x-1, 1);
       }
     else if(y == SY-1) {
-      p.type = 4;
+      p.type = ptype::top;
       boundary.emplace(1, y-1);
       }
     else if(get_heart(xy) != inpixel)
-      p.type = 5;
+      p.type = ptype::bottom;
     else {
       p.side = current_side;
       if(x > cxy.x)
-        p.type = 1;
+        p.type = ptype::inside;
       else if(y < cxy.y)
-        p.type = 2;
+        p.type = ptype::inside_left_up;
       else
-        p.type = 3;
+        p.type = ptype::inside_left_down;
       }
     }
   
@@ -322,15 +328,15 @@ void createb_outer(ipoint cxy) {
     auto xy = boundary.front();
     boundary.pop();
     auto& p = pts[xy];
-    if(p.type != 5) continue;
-    p.type = 4;
+    if(p.type != ptype::bottom) continue;
+    p.type = ptype::top;
     for(int d=0; d<4; d++)
       boundary.emplace(xy + dv[d]);
     }
   }
 
 void createb_inner(ipoint axy, ipoint bxy) {
-  create_side(0);
+  create_side(stype::standard);
 
   cside().inner_point = axy;
   auto inpixel = heart[axy];
@@ -349,9 +355,9 @@ void createb_inner(ipoint axy, ipoint bxy) {
     p.side = 0;
     p.baktype = p.type;
     if(get_heart(xy) == inpixel && x && y && x < SX-1 && y < SY-1 && !trimmed)
-      p.type = 1;
+      p.type = ptype::inside;
     else
-      p.type = 0;
+      p.type = ptype::outside;
     }
   
   auto [axy1, ad] = boundary_point_near(pts, addmargin(axy));
@@ -363,19 +369,19 @@ void createb_inner(ipoint axy, ipoint bxy) {
 // Hilbert curve
 
 void create_hilbert(int lev, int pix, int border) {
-  single_side(0);
+  single_side(stype::standard);
 
   SY = SX = pix << lev;
   resize_pt();
   for(int y=0; y<SY; y++) 
   for(int x=0; x<SX; x++) 
     pts[y][x].side = 0, 
-    pts[y][x].type = 0;
+    pts[y][x].type = ptype::outside;
   ipoint wxy(0, 0);
   auto connection = [&] (int dir) {
     for(int dy=(dir==1?-border:border); dy<(dir==3?pix+border:pix-border); dy++)
     for(int dx=(dir==2?-border:border); dx<(dir==0?pix+border:pix-border); dx++)
-      pts[dy+wxy.y*pix][dx+wxy.x*pix].type = 1;
+      pts[dy+wxy.y*pix][dx+wxy.x*pix].type = ptype::inside;
     if(dir<4) wxy += dv[dir];
     };
   std::function<void(int,int,int)> hilbert_recursive = [&] (int maindir, int subdir, int l) {
@@ -388,7 +394,7 @@ void create_hilbert(int lev, int pix, int border) {
     connection(subdir^2);
     hilbert_recursive(subdir^2, maindir^2, l-1);
     };
-  pts[border-1][pix/2].type = 6;
+  pts[border-1][pix/2].type = ptype::left_inf;
   hilbert_recursive(0, 3, lev);
   connection(4);
   split_boundary(pts, {pix/2, border-1}, {SX-1-pix/2, border-1}, 1);
@@ -399,7 +405,7 @@ void saveb(const string& s) {
   printf("%d %d\n", SX, SY);
   for(int y=0; y<SY; y++) {
     for(int x=0; x<SX; x++)
-      fprintf(f, "%c", "X.-+TDLR" [pts[y][x].type]);
+      fprintf(f, "%c", "X.-+TDLR" [int(pts[y][x].type)]);
     fprintf(f, "\n");
     }
   fclose(f);
@@ -442,13 +448,13 @@ void drawstates(pointmap& ptmap) {
       auto& p = zoomed ? ptmap[(y+zy)/4][(x+zx)/4] : ptmap[y][x];
       screen[y][x] = statecolors[p.state];
       if(p.state == 0) switch(p.type) {
-        case 4: screen[y][x] = 0xFFFFFF; break;
-        case 5: screen[y][x] = 0xFF00FF; break;
+        case ptype::top: screen[y][x] = 0xFFFFFF; break;
+        case ptype::bottom: screen[y][x] = 0xFF00FF; break;
         }
       part(screen[y][x], 2) = itc(isize(p.eqs));
       if(find_equation(pt.eqs, p)) part(screen[y][x], 2) = 0x80;
-      if(p.type == 2) part(screen[y][x], 0) |= 0x20;
-      if(p.type == 3) part(screen[y][x], 0) |= 0x40;
+      if(p.type == ptype::inside_left_up) part(screen[y][x], 0) |= 0x20;
+      if(p.type == ptype::inside_left_down) part(screen[y][x], 0) |= 0x40;
       }
     screen.draw();
     
@@ -510,8 +516,6 @@ array<ipoint, 4> find_neighbors(pointmap& ptmap, ipoint xy) {
   return res;
   }
 
-bool inner(int t) { return t > 0 && t < 4; }
-
 void computemap(pointmap& ptmap) {
 
   for(int i=0; i<2; i++) {
@@ -537,25 +541,25 @@ void computemap(pointmap& ptmap) {
         int xp = 0;
         for(auto np: nei) {
           auto t = ptmap[np].type;
-          if(t < 4 || t == 6 || t == 7) xp++;
+          if(inner(t) || infinitary(t)) xp++;
           }
         for(auto np: nei) {
           auto& p2 = ptmap[np];
-          if(p2.type == 6) p.bonus += 0;
-          else if(p2.type == 7) p.bonus += 1./xp;
-          else if(p2.type < 4) {
+          if(p2.type == ptype::left_inf) p.bonus += 0;
+          else if(p2.type == ptype::right_inf) p.bonus += 1./xp;
+          else if(inner(p2.type)) {
             p.eqs.emplace_back(&p2, 1./xp);
-            if(p.type == 2 && p2.type == 3) p.bonus += 1./xp;
-            if(p.type == 3 && p2.type == 2) p.bonus -= 1./xp;
+            if(p.type == ptype::inside_left_up && p2.type == ptype::inside_left_down) p.bonus += 1./xp;
+            if(p.type == ptype::inside_left_down && p2.type == ptype::inside_left_up) p.bonus -= 1./xp;
             }
           }
         }
       if(i == 1) {
         for(auto np: nei) {
           auto& p2 = ptmap[np];
-          if(p2.type == 4) p.bonus += 0; 
-          else if(p2.type == 5) p.bonus += 1./4; 
-          else if(p2.type == 6 || p2.type == 7) p.bonus += 1./8;
+          if(p2.type == ptype::top) p.bonus += 0; 
+          else if(p2.type == ptype::bottom) p.bonus += 1./4; 
+          else if(infinitary(p2.type)) p.bonus += 1./8;
           else {
             p.eqs.emplace_back(&p2, 1./4);
             }
@@ -651,6 +655,14 @@ void computemap(pointmap& ptmap) {
     }
   }
 
+template<class T> void save(FILE *f, const T& x) {
+  fwrite(&x, sizeof(T), 1, f);
+  }
+
+template<class T> void load(FILE *f, T& x) {
+  fread(&x, sizeof(T), 1, f);
+  }
+
 void savemap(const string& fname) {
   FILE *f = fopen(fname.c_str(), "wb");
   if(!f) pdie("savemap");
@@ -659,9 +671,9 @@ void savemap(const string& fname) {
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
-    fwrite(&p.x, sizeof(p.x), 1, f);
-    int t = p.type;
-    fwrite(&t, sizeof(t), 1, f);
+    save(f, p.x);
+    int t = int(p.type);
+    save(f, t);
     }
   fclose(f);
   }
@@ -672,14 +684,14 @@ void merge_sides() {
     for(int x=0; x<SX; x++) {
       auto xy = ipoint(x, y);
       auto& p = pts[xy];
-      if(p.type == 0 || p.type >= 4)
+      if(!inner(p.type))
         p.type = p.baktype;
       }
     }
   }
 
 void loadmap(const string& fname) {
-  auto& side = single_side(0);
+  auto& side = single_side(stype::standard);
 
   FILE *f = fopen(fname.c_str(), "rb");
   if(!f) pdie("loadmap");
@@ -689,17 +701,16 @@ void loadmap(const string& fname) {
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
-    fread(&p.x, sizeof(p.x), 1, f);
-    int t;
-    fread(&t, sizeof(t), 1, f); p.type = t;
-    if(p.type == 2) side.type = 1;
+    load(f, p.x);
+    int t; load(f, t); p.type = ptype(t);
+    if(p.type == ptype::inside_left_up) side.type = stype::ring;
     p.side = 0;
     }
   fclose(f);
   }
 
 void loadmap2(const string& fname) {
-  auto& side = new_side(0);
+  auto& side = new_side(stype::standard);
   FILE *f = fopen(fname.c_str(), "rb");
   if(!f) pdie("loadmap2");
   int iSX, iSY;
@@ -709,14 +720,12 @@ void loadmap2(const string& fname) {
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) {
     datapoint dp; 
-    fread(&dp.x, sizeof(dp.x), 1, f);
-    int t;
-    fread(&t, sizeof(t), 1, f);
-    dp.type = t;
-    if(dp.type < 4 && dp.type > 0) {
+    load(f, dp.x);
+    int t; load(f, t); dp.type = ptype(t);
+    if(inner(dp.type)) {
       dp.side = side.id;
       pts[y][x] = dp;
-      if(dp.type == 2) side.type = 1;
+      if(dp.type == ptype::inside_left_up) side.type = stype::ring;
       }
     }
   fclose(f);
@@ -727,7 +736,7 @@ void loadmap_join(const string& fname, ipoint xy) {
   FILE *f = fopen(fname.c_str(), "rb");
   if(!f) pdie("loadmap_join");
   
-  auto& side = new_side(0);
+  auto& side = new_side(stype::standard);
   side.parentid = current_side;
   side.rootid = cside().rootid;
   cside().childsides.push_back(side.id);
@@ -745,8 +754,8 @@ void loadmap_join(const string& fname, ipoint xy) {
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) {
     auto& p = epts[y][x];
-    fread(&p.x, sizeof(p.x), 1, f);
-    fread(&p.type, sizeof(p.type), 1, f);
+    load(f, p.x);
+    int t; load(f, t); p.type = ptype(t);
     p.side = side.id;
     }
 
@@ -813,7 +822,7 @@ void compute_am() {
   for(int cy=0; cy<SY; cy++)
   for(int cx=0; cx<SX; cx++) {
     auto& p = pts[cy][cx];
-    if(p.type != 1) continue;
+    if(p.type != ptype::inside) continue;
     auto y = diskpoint(cx, cy);
     if(isnan(y[0]) || isnan(y[1]) || hypot(y[0], y[1]) > .9) continue;
     cpoint x = { ld(cx), ld(cy) };
@@ -849,7 +858,7 @@ void compute_am() {
   for(int cy=0; cy<SY; cy++)
   for(int cx=0; cx<SX; cx++) {
     auto& p = pts[cy][cx];
-    if(p.type != 1) continue;
+    if(p.type != ptype::inside) continue;
     auto y = diskpoint(cx, cy);
     if(isnan(y[0]) || isnan(y[1]) || hypot(y[0], y[1]) > .99999) continue;
     cpoint x = { ld(cx), ld(cy) };
@@ -879,7 +888,7 @@ void draw(bitmap &b) {
   for(int x=0; x<SX; x++) {
     auto& p = pts[y][x];
 
-    if(p.type == 0) {
+    if(p.type == ptype::outside) {
     
       b[y][x] = notypeside;
 
@@ -888,7 +897,7 @@ void draw(bitmap &b) {
       for(int ay=-1; ay<=1; ay++) {
         int x1 = x + ax * lined_out;
         int y1 = y + ay * lined_out;
-        if(x1 >= 0 && y1 >= 0 && x1 < SX && y1 < SY && pts[y1][x1].type)
+        if(x1 >= 0 && y1 >= 0 && x1 < SX && y1 < SY && pts[y1][x1].type != ptype::outside)
           b[y][x] = 0;
         }
 
@@ -1077,13 +1086,13 @@ bool need_measure = true;
 
 void measure(sideinfo& si) {
   
-  if(si.type == 3) return;
+  if(si.type == stype::fake) return;
   int sii = si.id;
   auto& gpts = *si.submap;  
 
   vector<ld> cscs[2];
   
-  printf("side #%d (type %d), x %p\n", si.id, si.type, &gpts);
+  printf("side #%d (type %d), x %p\n", si.id, int(si.type), &gpts);
   
   int valid = 0, total = 0;
 
@@ -1121,10 +1130,10 @@ void measure(sideinfo& si) {
   si.xcenter = xes[size(xes) / 2] + si.animshift;
   printf("xcenter: %Lf\n", si.xcenter);
 
-  if(si.type && si.period > 0) {
+  if(si.type != stype::standard && si.period > 0) {
     printf("period multiple: %Lf\n", M_PI / si.cscale[0] / si.period);
   
-    if(si.type == 2) {
+    if(si.type == stype::fixed_ring) {
       ld pmul = M_PI / si.cscale[0] / si.period;
       pmul = int(pmul + .5);
       si.cscale[0] = M_PI / si.period / pmul;
@@ -1273,7 +1282,7 @@ int main(int argc, char **argv) {
       }
     else if(s == "-zebra") csideroot().period_unit = zebra_period, csideroot().period_matrices = zebra_matrices;
     else if(s == "-period") csideroot().period = csideroot().period_unit * atoi(next_arg());
-    else if(s == "-fix") csideroot().type = 2;
+    else if(s == "-fix") csideroot().type = stype::fixed_ring;
     else if(s == "-ash") csideroot().animshift += atof(next_arg());
     else if(s == "-draw") ui();
     else if(s == "-export") export_image(next_arg());
@@ -1325,7 +1334,7 @@ int main(int argc, char **argv) {
       create_triangle(atoi(next_arg()));
       }
     else if(s == "-spiral") {
-      single_side(0);
+      single_side(stype::standard);
       spiral_mode = true;
       need_measure = false;
       SX = atoi(next_arg());
