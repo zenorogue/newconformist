@@ -1043,10 +1043,19 @@ void klawisze() {
         printf("this point (%d,%d) is %lf %lf\n", mousex, mousey, double(p.x[0]), double(p.x[1]));
         }
       
-      if(key == 'u') use_childsides = !use_childsides;
+      if(key == 'u') {
+        use_childsides = !use_childsides;
+        printf("use_childsides = %d\n", use_childsides);
+        }
       
-      if(key == 'm') mark_sides = !mark_sides;
-      if(key == 'c') no_images = !no_images;
+      if(key == 'm') {
+        mark_sides = !mark_sides;
+        printf("mark_sides = %d\n", mark_sides);
+        }
+      if(key == 'c') {
+        no_images = !no_images;
+        printf("no_images = %d\n", no_images);
+        }
       if(key == 'q') 
         break_loop = true;
       
