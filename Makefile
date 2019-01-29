@@ -158,6 +158,9 @@ draw-letter-e: nconf #letter-e.maps
 hilbert.map: nconf
 	./nconf -hilbert 3 64 2 -sb hmap.txt -cm -sm hilbert.map
 
+hilbert-big.map: nconf
+	./nconf -qt -hilbert 4 128 4 -sb hmap.txt -cm -sm hilbert-big.map
+
 # needs hilbert.map
 draw-hilbert-chaos: nconf
 	./nconf \
@@ -168,6 +171,11 @@ draw-hilbert-std: nconf
 	./nconf \
 	  -lm hilbert.map -lbands 1 11 std%d.png  \
 	  -draw
+
+hilbert-std.png: nconf
+	./nconf \
+	  -lm hilbert-big.map -lbands 1 11 std%d.png  \
+	  -export hilbert-std.png
 
 draw-hilbert-stdx: nconf
 	./nconf \

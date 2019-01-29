@@ -208,7 +208,7 @@ void split_boundary(pointmap& ptmap, ipoint axy, ipoint bxy, int d) {
   ptmap[bxy].type = ptype::right_inf;
   bxy -= dv[d];
   
-  for(int iter=0; iter<100000; iter++) {
+  for(int iter=0; iter<100000000; iter++) {
     d &= 3;
     auto& pt2 = ptmap[bxy + dv[d]];
     ptype nphase = ptype(int(phase)+2); // ugly
