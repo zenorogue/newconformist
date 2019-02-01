@@ -110,7 +110,6 @@ draws: nconf
 	  -draw
 
 # empty rectangle of the size suitable for A6 postcards, in 300 dpi
-# needs about 16 GB of RAM and lots of time (413 minutes)
 postcard: nconf
 	./nconf -rectangle 1750 1237 -cm -sm postcard.map
 
