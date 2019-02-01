@@ -830,7 +830,7 @@ cpoint get_conformity(int x, int y, sideinfo& side) {
 bool mark_sides, no_images;
 
 int notypeside = 0xFFD500;
-int boundary_color = 0xFFFFFF;
+int boundary_color = 0x000000;
 
 int bbnd = 100;
 
@@ -945,7 +945,7 @@ void draw(bitmap &b) {
         int x1 = x + ax * lined_out;
         int y1 = y + ay * lined_out;
         if(x1 >= 0 && y1 >= 0 && x1 < SX && y1 < SY && pts[y1][x1].type != ptype::outside)
-          b[y][x] = 0;
+          b[y][x] = boundary_color;
         }
 
       continue;
@@ -1397,6 +1397,8 @@ int main(int argc, char **argv) {
       lined_out = atoi(next_arg());
     else if(s == "-notype")
       notypeside = strtol(next_arg(), NULL, 16);
+    else if(s == "-boundcolor")
+      boundary_color = strtol(next_arg(), NULL, 16);
     else if(s == "-viewerror") {
       view_error = true;
       measure_if_needed();
