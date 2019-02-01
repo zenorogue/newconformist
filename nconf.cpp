@@ -1332,6 +1332,8 @@ int main(int argc, char **argv) {
         }
       }
     else if(s == "-zebra") csideroot().period_unit = zebra_period, csideroot().period_matrices = zebra_matrices;
+    else if(s == "-p45") csideroot().period_unit = period_45, csideroot().period_matrices = matrices_45;
+    else if(s == "-p46") csideroot().period_unit = period_46, csideroot().period_matrices = matrices_46;
     else if(s == "-period") csideroot().period = csideroot().period_unit * atof(next_arg());
     else if(s == "-fix") csideroot().type = stype::fixed_ring;
     else if(s == "-ash") csideroot().animshift += atof(next_arg());
