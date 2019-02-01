@@ -1353,6 +1353,15 @@ int main(int argc, char **argv) {
       int cnt = atoi(next_arg());
       export_video(speed, cnt, next_arg());
       }
+    else if(s == "-killside") {
+      for(int y=0; y<SY; y++)
+      for(int x=0; x<SX; x++) {
+        auto& p = pts[y][x];
+        if(p.side == current_side)
+          p.type = ptype::outside;
+        }
+      cside().type = stype::fake;
+      }
     else if(s == "-ntsblack") {
       notypeside = 0;
       }
