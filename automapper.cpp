@@ -70,6 +70,7 @@ void auto_joins() {
   ipoint ending = q.back().first;
   for(ipoint p: last_points) if(p == ending) {
     printf("error: ending repeats\n");
+    for(auto pt: q) pts[pt.first].type = ptype::inside;
     return;
     }
   last_points.push_back(ending);
@@ -102,14 +103,14 @@ void auto_joins() {
       auto& p = epts[xy];
       auto& pold = ppts[xy];
       p.side = side.id;
-      p.type = (pold.type == ptype::inside && intdif(pold.x[0] - ppts[ending].x[0]) < 3 * cside().cscale[0]) ? ptype::inside : ptype::outside;
+      p.type = (inner(pold.type) && intdif(pold.x[0] - ppts[ending].x[0]) < 3 * cside().cscale[0]) ? ptype::inside : ptype::outside;
       
       if(p.type == ptype::inside) {
        
         ld err = hypot(pold.x[0] - ppts[ending].x[0], pold.x[1] - (over ? 1-join_y : join_y));
         if(err < error) error = err, side.join = xy;
       
-        ld nlow = frac(pold.x[0] - ppts[ending].x[0] + .5);
+        ld nlow = frac(pold.x[0] - ppts[ending].x[0] + 2.5);
         if(nlow < low) low = nlow, lowpoint = xy;
         }
       }
