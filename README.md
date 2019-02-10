@@ -63,7 +63,7 @@ merging point. If our x coordinate is greater (at least by 2), this means we sho
 to find a transformation which agrees at these points, and apply this transformation.
 
 This process can be generalized to more forks. We need to perform mapping for any B which is an end, and find merging points for each pair of "adjacent" forks, until we merge everything.
-It needs quite a lot of manual assembly to find the coordinates of all the endpoints and merging points, though.
+Newconformist can find all the branching and ending points automatically; the methods works correctly for most shapes.
 
 # Sample images
 
