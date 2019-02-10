@@ -155,6 +155,12 @@ than the given number of pixels. The branch merge point is chosen at the given y
 
 `-joinoff`: disables the branching algorithm.
 
+`-cvlgen <filename>`: use HyperRogue/RogueViz to generate tilings for a branching shape. See the Makefile for an example. The process is as follows:
+* First, generate a mapping, and save it with e.g. `-sma maze.maps`.
+* Run newconformist with `-lma maze.maps -cvlgen maze-cvl.txt` to generate a text file asking about points/rotations. 
+* Run [RogueViz](https://github.com/zenorogue/hyperrogue/) with parameters `-cvlbuild maze-cvl.txt -cvldraw mcvl/maze-%02d-%03d.png` to generate a sequence of PNG files.
+* Run newconformist with e.g. `-lma maze.maps -cvlimg mcvl/maze-%02d-%03d.png`. 
+
 # Shapes
 
 `-rectangle <X> <Y> -cm`: prepare a XxY rectangle from mapping.

@@ -131,6 +131,11 @@ void construct_btd_for(sideinfo& si) {
     
     si.matrixlist.push_back(T);
     si.zero_shift = new_x0;
+    
+    ld dx0 = old_x0 - par.zero_shift;
+    
+    si.parentrel_x = int(dx0);
+    si.parentrel_matrix = mul(xpush(dx0-si.parentrel_x), mul(mold, inverse(mnew)));
     }
   }
 
@@ -143,7 +148,7 @@ void construct_btd() {
 
 ld btd_at = 2;
 
-cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& yval) {
+cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& xval, ld& yval) {
 
   cpoint c = pts[py][px].x;
   
@@ -177,6 +182,7 @@ cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& yval) {
     p = reperiod(p, si.period_matrices);
     tsiid = csi->id;
     yval = y;
+    xval = x;
     }
   
   else {
@@ -198,5 +204,59 @@ cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& yval) {
     }
   
   cpoint pt = hyper_to_disk(p);  
+  if(!si.img.s) return pt;
   return (cpoint{1, 1} + pt) * (si.img.s->h / 2);
+  }
+
+void measure_if_needed();
+
+void prepare_all_matrices() {
+  measure_if_needed();
+  construct_btd();
+
+  for(int y=0; y<SY; y++)
+  for(int x=0; x<SX; x++) {
+    auto& p = pts[y][x];
+
+    if(inner(p.type)) {
+      ld xval = 0, yval = 0;
+      int tsiid = p.side;
+      auto dc = band_to_disk(x, y, sides[tsiid], tsiid, xval, yval);
+      }
+    }
+  }
+  
+void create_viewlist(int current_side, string fname) {
+  prepare_all_matrices();
+
+  FILE *f = fopen(fname.c_str(), "wt");
+  for(auto& si: sides) {
+    if(si.rootid == current_side) {
+      if(si.parentid != si.id) {
+        fprintf(f, "%d %d %d ", si.id, si.parentid, si.parentrel_x);
+        for(int i=0; i<9; i++) fprintf(f, "%lf ", double(si.parentrel_matrix[i]));
+        }
+      else fprintf(f, "%d ", si.id);
+      fprintf(f, "%d %d\n", isize(si.matrixlist), isize(si.rmatrixlist));
+      }
+    }
+  fprintf(f, "%d\n", -1);
+  fclose(f);
+  }
+
+void read_viewlist(int current_side, string format) {
+  prepare_all_matrices();
+
+  for(auto& si: sides) {
+    for(int i=0; i<isize(si.matrixlist); i++) {
+      char buf[1000];
+      sprintf(buf, format.c_str(), si.id, i);
+      FILE *f = fopen(buf, "rb");
+      if(f) {
+        printf("found %s\n", buf);
+        fclose(f);
+        si.img_line.push_back(readPng(buf));        
+        }
+      }
+    }
   }

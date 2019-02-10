@@ -142,8 +142,24 @@ draw-maze: nconf
 	./nconf -lma maze.maps \
 	 -side 0 -li windy.png -zebra -period 9 -fix \
 	 -side 1 -li poincare.png -zebra -period 1 -fix \
-	 -side 7 -li zebra.png -zebra -period 6 \
+	 -side 9 -li zebra.png -zebra -period 6 \
 	 -draw -export big-maze-mapped.png
+
+maze2.maps: nconf
+	time ./nconf -scale 1 -joinparams 3e-3 40 .1 -qt -margin 0 -mim maze2.png -mapat 10 10 -sma maze2.maps
+
+maze-cvl.txt: nconf maze2.maps
+	time ./nconf -lma maze2.maps -cvlgen maze-cvl.txt
+
+mcvl/maze-00-000.png: maze-cvl.txt
+	mkdir -p mcvl
+	rm -f mcvl/*.png
+	$(HYPER) -nogui -C -each 10 -shotxy 800 800 -wm 3 -mm 2 -smart 1 -cvlbuild maze-cvl.txt -cvldraw mcvl/maze-%02d-%03d.png
+
+mcvl-gen: mcvl/maze-00-000.png
+
+maze-cvl.png: mcvl-gen nconf
+	./nconf -ntsblack -lma maze2.maps -cvlimg mcvl/maze-%02d-%03d.png -export maze-cvl.png
 
 letter-e.maps: nconf
 	./nconf -qt -scale 0.5 -joinoff -mim letter-e.png -mapat 185 229 -sma letter-e.maps

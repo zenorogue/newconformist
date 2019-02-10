@@ -126,6 +126,9 @@ struct sideinfo {
   pointmap* submap;
   ipoint join;
   int parentid, rootid;
+  transmatrix parentrel_matrix;
+  int parentrel_x;
+  vector<bitmap> img_line;
   };
 
 vector<sideinfo> sides;
@@ -976,7 +979,7 @@ void draw(bitmap &b) {
         else bx -= bandimg.s->w;
         }
       }
-    else if(no_images || !si.img.s) {
+    else if(no_images || (!si.img.s && !isize(si.img_line))) {
       int qsides = size(sides);
       auto& pix = b[y][x];
       auto& pt = pts[y][x];
@@ -1032,12 +1035,23 @@ void draw(bitmap &b) {
         }
       }
     else {
-      ld yval = 0;
-      auto dc = band_to_disk(x, y, si, tsiid, yval);
+      ld xval = 0, yval = 0;
+      auto dc = band_to_disk(x, y, si, tsiid, xval, yval);
+      auto& tsi = sides[tsiid];
       if(yval >= bbnd || yval <= -bbnd)
         b[y][x] = boundary_color;
-      else
+      else if(isize(tsi.img_line) > 0 && isize(tsi.img_line) > xval - tsi.zero_shift) {
+        ld nxval = xval - tsi.zero_shift;
+        int xi = int(nxval);
+        hyperpoint p = equirectangular(nxval-xi, yval);
+        cpoint pt = hyper_to_disk(p);  
+        pt = (cpoint{1, 1} + pt) * (tsi.img_line[xi].s->h / 2);
+        b[y][x] = tsi.img_line[xi][pt[1]][pt[0]];
+        }
+      else if(si.img.s)
         b[y][x] = si.img[dc[1]][dc[0]];
+      else
+        b[y][x] = boundary_color;
       }
     
     if(mark_sides) {
@@ -1426,6 +1440,10 @@ int main(int argc, char **argv) {
       }
     else if(s == "-tm")
       triangle_mode = true;
+    else if(s == "-cvlgen")
+      create_viewlist(current_side, next_arg());
+    else if(s == "-cvlimg")
+      read_viewlist(current_side, next_arg());
     else die("unrecognized argument: " + s);
     }
 
