@@ -32,6 +32,8 @@
 bool chessmap = false;
 ipoint chesspos;
 
+int zoomout = 1;
+
 int lined_out;
 
 typedef std::complex<ld> cld;
@@ -481,16 +483,16 @@ ld find_equation(vector<equation>& v, datapoint& p) {
 void drawstates(pointmap& ptmap) {
   do {
     if(!draw_progress) return;
-    initGraph(SX, SY, "conformist", false);
+    initGraph(SX/zoomout, SY/zoomout, "conformist", false);
     int statecolors[4] = {
       0x000080, 0x00FF00, 0x000000, 0x00FFFF };
   
     auto& pt = zoomed ? ptmap[(mousey+zy)/4][(mousex+zx)/4] : ptmap[mousey][mousex];
     // printf("eqs = %d\n", isize(pt.eqs));
   
-    for(int y=0; y<SY; y++)
-    for(int x=0; x<SX; x++) {
-      auto& p = zoomed ? ptmap[(y+zy)/4][(x+zx)/4] : ptmap[y][x];
+    for(int y=0; y<SY/zoomout; y++)
+    for(int x=0; x<SX/zoomout; x++) {
+      auto& p = zoomed ? ptmap[(y*zoomout+zy)/4][(x*zoomout+zx)/4] : ptmap[y*zoomout][x*zoomout];
       screen[y][x] = statecolors[p.state];
       if(p.state == 0) switch(p.type) {
         case ptype::top: screen[y][x] = 0xFFFFFF; break;
@@ -522,7 +524,7 @@ void drawstates(pointmap& ptmap) {
         int uni = event.key.keysym.unicode;
 
         if(key == 'p') paused = !paused;
-        if(key == 'z') zx = mousex*3, zy = mousey*3, zoomed = !zoomed;
+        if(key == 'z') zx = mousex*zoomout*3, zy = mousey*zoomout*3, zoomed = !zoomed;
         
         break;
         }
@@ -1344,7 +1346,7 @@ void measure_if_needed() {
 
 void ui() {
   measure_if_needed();
-  initGraph(SX, SY, "conformist", false);
+  initGraph(SX / zoomout, SY / zoomout, "conformist", false);
   int t = SDL_GetTicks();
   break_loop = false;
   while(!break_loop) {
@@ -1601,6 +1603,8 @@ int main(int argc, char **argv) {
       read_viewlist(current_side, next_arg());
     else if(s == "-cheetah")
       cheetah = readPng(next_arg());
+    else if(s == "-zo")
+      zoomout = atoi(next_arg());
     else if(s == "-excheetah") {
       int cnt = atoi(next_arg());
       export_cheetah(cnt, next_arg());
