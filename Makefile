@@ -2,10 +2,10 @@
 #  // zebra: 6*fivecells
 #  // reptiles: 3*fivecells
 
-nconf: nconf.cpp mat.cpp zebra.cpp triangle.cpp btd.cpp spiral.cpp automapper.cpp
+nconf: nconf.cpp mat.cpp zebra.cpp triangle.cpp btd.cpp spiral.cpp automapper.cpp diamond.cpp
 	g++ nconf.cpp -o nconf -lgd -lSDL -O3 -std=c++1z
 
-nconf-debug: nconf.cpp mat.cpp zebra.cpp triangle.cpp btd.cpp spiral.cpp automapper.cpp
+nconf-debug: nconf.cpp mat.cpp zebra.cpp triangle.cpp btd.cpp spiral.cpp automapper.cpp diamond.cpp
 	g++ nconf.cpp -o nconf-debug -lgd -lSDL -g -std=c++1z
 
 elegant-cat-outside.map: nconf
@@ -209,6 +209,12 @@ draw-hilbert-stdv: nconf
 
 triangle400.map: nconf
 	./nconf -triangle 400 -cm -sm triangle400.map
+
+diamond500.map: nconf
+	./nconf -diamond 500 -cm -sm diamond500.map
+
+quincunx: nconf
+	./nconf -lm diamond500.map -li i1.png -quincunx -li i3.png  -draw -export i4.png
 
 triangle-earth: nconf
 	./nconf -lm triangle400.map -li earthspin.png -tm -export triangles/tearth.png

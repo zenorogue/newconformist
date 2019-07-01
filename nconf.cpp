@@ -456,6 +456,7 @@ int mousex, mousey;
 
 // 'unofficial' experiments that newconformist has been used for
 #include "triangle.cpp"
+#include "quincunx.cpp"
 #include "spiral.cpp"
 
 void klawisze();
@@ -1409,6 +1410,9 @@ int main(int argc, char **argv) {
     else if(s == "-triangle") {
       create_triangle(atoi(next_arg()));
       }
+    else if(s == "-diamond") {
+      create_diamond(atoi(next_arg()));
+      }
     else if(s == "-spiral") {
       single_side(stype::standard);
       spiral_mode = true;
@@ -1440,6 +1444,12 @@ int main(int argc, char **argv) {
       }
     else if(s == "-tm")
       triangle_mode = true;
+    else if(s == "-quincunx")
+      do_quincunx();
+    else if(s == "-lquincunx") {
+      ld scale = atof(next_arg());
+      load_image_for_quincunx(next_arg(), scale);
+      }
     else if(s == "-cvlgen")
       create_viewlist(current_side, next_arg());
     else if(s == "-cvlimg")
