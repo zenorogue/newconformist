@@ -171,8 +171,25 @@ than the given number of pixels. The branch merge point is chosen at the given y
 
 `-circle <R> -cm`: prepare a circle of radius R for mapping. We know how to make a circular conformal model, so this is for testing our approximations.
 
+`-triangle <L>`: prepare an equilateral triangle of edge length L.
+
+`-diamond <L>`: prepare a diamond (actually, a square rotated by 45 degrees) of diagonal length 2L.
+
 `-hilbert <level> <width> <border> -cm`: create a shape based on the Hilbert curve. Parameters are: the level of the Hilbert curve, width in pixels (including the border), and the width of 
 the border in pixels (on one side). Sample values: `-hilbert 4 32 2 -cm`.
+
+# Side experiments
+
+`-tm`: an experiment with quincuncial-like triangular projection. You need to generate a `-triangle` map first, then do `-li <image> -tm`, where `<image>` is in equirectangular projection. See
+[here](https://twitter.com/ZenoRogue/status/1026227019925868544).
+
+`-spiral`: an experiment with spiral-like projection (undocumented). See [here](https://twitter.com/ZenoRogue/status/1057271562083229697).
+
+`-quincunx`: make a Peirce's quincuncial projection. You need to generate a `-diamond` map first, then do `-li <image1> -quincunx -li <image2>`, where `<image1>` and `<image2>` are the two
+hemispheres in stereographic projection. Alternatively, do `-quincunx -lquincunx <scale> <image>`, where `<image>` is an Euclidean image which will be mapped to a sphere using stereographic
+projection. See [here](https://twitter.com/ZenoRogue/status/1145454607298174981).
+
+`-cheetah`, `-excheetah`: an experiment with shape changing (undocumented). See [here](https://twitter.com/ZenoRogue/status/1096097650057846785).
 
 # Obsolete commands
 
