@@ -9,7 +9,7 @@ Conformally map the hyperbolic plane to arbitrary shapes. See [our Bridges 2019 
 
 ![forked shape](http://roguetemple.com/z/newconformist/triskele-textured.png)
 
-# References
+# Quick References
 
 Play the tutorial in [HyperRogue](http://roguetemple.com/z/hyper) as an introduction to hyperbolic geometry.
 
@@ -69,6 +69,10 @@ Newconformist can find all the branching and ending points automatically; the me
 
 See http://roguetemple.com/z/newconformist/ for sample image files (shapes and tilings). Tilings come from HyperRogue, the Elegant Cat Silhouette by GDJ comes from
 https://openclipart.org/detail/258901/elegant-cat-silhouette .
+
+# Dependencies
+
+Newconformist is written in C++17. It uses libgd for loading and saving the PNG files.
 
 # Usage: quick start
 
