@@ -34,10 +34,47 @@ draw: nconf
 
 draw-map: nconf
 	./nconf \
-	  -lm elegant-cat-inside.map -chessmap 786 572 -draw -export chessmap.png
+	  -lm elegant-cat-inside.map -chessmap 786 572 -draw -export chessmap.png2
 
 draw-tree: nconf
-	./nconf -qt -scale 2 -mim triskele.png -mapin -li zebra.png -zebra -period 6 -draw
+	./nconf -qt -scale 6 -mim letter-e.png -mapin -mapout -li zebra.png -zebra -period 6 -draw
+
+letter-p: nconf
+	./nconf -qt -scale 2 -mim letter-p.png -mapat 189 378 -li zebra.png -zebra -period 6 -draw
+
+bridges.maps: nconf
+	./nconf -qt -scale 1 -mim bridges.png -mapall -sma bridges.maps
+
+t: nconf
+	./nconf -rectangle 400 200 -cm -sma t.maps
+
+t2:nconf
+	./nconf -lma t.maps -li p-chess.png -period 3.5 -draw
+
+draw-bridges: nconf
+	./nconf -lma bridges.maps \
+	  -side 0 -killside \
+	  -side 2 -li p-chess.png -p46 -period 1 \
+	  -side 11 -li p-chess.png -p46 -period 1 \
+	  -side 5 -li p45.png -p45 -period 1 \
+	  -side 8 -li poincare.png -zebra -period 1 \
+	  -side 12 -killside \
+	  -side 13 -killside \
+	  -side 14 -killside \
+	  -side 15 -killside \
+	  -side 1 -li p-icy.png -zebra -period 1 -fix \
+	  -side 3 -li p-redrock.png -zebra -period 1 -fix \
+	  -side 6 -li p-warped.png -zebra -period 1 -fix \
+	  -side 9 -li reptiles.png -zebra -period 3 -fix \
+	  -lineout 5 -ntswhite -btblack \
+	  -draw -export bridgesmap.png
+
+#	  -side 5 -li rosegarden.png -zebra -period 1 \
+#	  -side 8 -li windy.png -zebra -period 9 \
+#	  -side 2 -li zebra.png -zebra -period 6 \
+#         -side 11 -li zebrabright.png -zebra -period 6 \
+
+z:
 
 spintest: nconf
 	./nconf \
