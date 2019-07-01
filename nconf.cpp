@@ -921,7 +921,241 @@ void compute_am() {
   printf("max error = %lf (%lf pixels)\n", double(max_error), double(max_error * SX / 2));  
   }
 
+bitmap cheetah;
+
 // draw the result image (on the given bitmap, which could be the screen)
+
+void mark_outside(bitmap& b, int x, int y) {
+  b[y][x] = notypeside;
+
+  if(lined_out)
+  for(int ax=-1; ax<=1; ax++)
+  for(int ay=-1; ay<=1; ay++) {
+    int x1 = x*zoomout + ax * lined_out;
+    int y1 = y*zoomout + ay * lined_out;
+    if(x1 >= 0 && y1 >= 0 && x1 < SX && y1 < SY && pts[y1][x1].type != ptype::outside)
+      b[y][x] = boundary_color;
+    }
+  }
+
+ld hypot(cpoint p) { return hypot(p[0], p[1]); }
+
+ld factor = 1;
+
+int icrad = 270;
+
+bool use_back = false;
+
+void draw_cheetah(bitmap &b) {
+
+  ld xd = sides[0].xcenter;
+  ld yd = 0;
+  
+  ld alpha;
+  
+  if(true) {
+    printf("mousex = %d mousey = %d\n", mousex, mousey);
+    auto& p = pts[mousey*zoomout][mousex*zoomout];
+    int siid = p.side;
+    if(siid < size(sides) && inner(p.type)) {
+      xd = p.x[0];
+      yd = unband(p.x, sides[siid], -xd).second;
+
+      auto& p1 = pts[mousey*zoomout][mousex*zoomout+1];
+      if(p1.side == siid) {
+        auto [vx,vy] = unband(p1.x, sides[siid], -xd);
+        hyperpoint p = mul(ypush(-yd), equirectangular(vx, vy));
+        cpoint pt = hyper_to_disk(p);
+        alpha = atan2(pt[1], pt[0]);
+        }
+      }
+    }
+
+/*
+  int csize = 250;
+  vector2<cpoint> cheetah_closest;
+  vector2<color> cheetah_what;
+  cpoint cerror {-100, -100};
+
+  cheetah_closest.resize2(csize, csize);
+  cheetah_what.resize2(csize, csize);
+  for(int y=0; y<csize; y++)
+  for(int x=0; x<csize; x++) {
+    int r = hypot(y - csize/2, x - csize/2);
+    if(r < icrad) cheetah_closest[y][x] = cerror, cheetah_what[y][x] = 0xFF00FF;
+    else cheetah_closest[y][x] = cpoint{ld(x),ld(y)}, cheetah_what[y][x] = r < icrad+lined_out ? 0 : -1;
+    }
+  */
+
+  for(int y=0; y<SY/zoomout; y++)
+  for(int x=0; x<SX/zoomout; x++) 
+    if(use_back) {
+      for(int p=0; p<4; p++)
+        part(b[y][x], p) = part(cheetah[y*zoomout-marginy][x*zoomout-marginx], p) / 4;
+      }
+    else b[y][x] = (y * 255 / (SY/zoomout)) << 8;
+
+  // vector<ipoint> cheetah_queue;
+
+  for(int y=0; y<SY; y++)
+  for(int x=0; x<SX; x++) {
+    auto& p = pts[y][x];
+
+    if(p.type != ptype::outside) {
+      int siid = p.side;
+      if(siid >= size(sides)) continue;
+      auto& si = sides[siid];
+      
+      auto ixy = unmargin(ipoint{x,y});
+
+      auto& px = b[y/zoomout][x/zoomout];
+      
+      // px = cheetah[ixy.y][ixy.x];
+      cpoint c = pts[y][x].x;
+      auto [vx,vy] = unband(c, si, -xd);
+      hyperpoint p = mul(spin(alpha), mul(ypush(-yd), equirectangular(vx, vy)));
+      cpoint pt = hyper_to_disk(p);
+      
+      pt = (cpoint{ld(mousex),ld(mousey)} + pt * icrad) * (1-factor) + cpoint{ld(x)/zoomout,ld(y)/zoomout} * factor;
+      ipoint ipt(pt[0], pt[1]);
+      
+      b[ipt] = cheetah[ixy];
+      }
+    }
+  
+  /*
+  for(int i=0; i<isize(cheetah_queue); i++) {
+    ipoint ipt = cheetah_queue[i];    
+    if(ipt.x < 0 || ipt.y < 0) exit(1);
+    cpoint cpt { ld(ipt.x), ld(ipt.y) };
+    bool changed = false;
+    for(auto k: dv) if(hypot(cpt-cheetah_closest[ipt+k]) < hypot(cpt-cheetah_closest[ipt]) - 1e-9) {
+      // printf("%d %d :: %Lf %Lf -> %Lf %Lf\n", ipt.x, ipt.y, cheetah_closest[ipt][0], cheetah_closest[ipt][1], cheetah_closest[ipt+k][0], cheetah_closest[ipt+k][1]);
+      changed = true; 
+      cheetah_closest[ipt] = cheetah_closest[ipt+k];
+      cheetah_what[ipt] = cheetah_what[ipt+k];
+      }
+    if(changed) for(auto k: dv) cheetah_queue.push_back(ipt+k);
+    }
+
+  for(int y=0; y<csize; y++)
+  for(int x=0; x<csize; x++) if(cheetah_what[y][x] != -1)
+    b[y][x] = cheetah_what[y][x];
+  */
+  }
+
+void draw_point(bitmap& b, int x, int y) {
+  auto& p = pts[y][x];
+
+  if(p.type == ptype::outside) {
+    mark_outside(b, x, y);
+    return;
+    }
+  
+  int siid = p.side;
+  int tsiid = siid;
+  if(siid >= size(sides)) return;
+  auto& si = sides[siid];
+
+  if(si.img_band.size() && !no_images) {
+    ld by = p.x[1];
+    ld bx = p.x[0] - si.xcenter;
+    bx /= si.cscale[0];
+    int sizy = si.img_band[0].s->h;
+    by *= sizy;
+    bx *= sizy;
+    int totalx = 0;
+    for(auto& bandimg: si.img_band) totalx += bandimg.s->w;
+    bx += totalx/2.;
+    bx -= int(bx) / totalx * totalx;
+    if(bx < 0) bx += totalx;
+    for(auto& bandimg: si.img_band) { 
+      if(bx < bandimg.s->w) {
+        b[y][x] = bandimg[by][bx];
+        break;
+        }
+      else bx -= bandimg.s->w;
+      }
+    }
+  else if(no_images || (!si.img.s && !isize(si.img_line))) {
+    int qsides = size(sides);
+    auto& pix = b[y][x];
+    auto& pt = pts[y][x];
+    if(chessmap) {
+      auto ch = pts[chesspos];
+      static bool chess_shown;
+      if(!chess_shown) {
+        chess_shown = true;
+        printf("chess = %lf %lf\n", double(ch.x[0]), double(ch.x[1]));
+        printf("chess to band = %lf %lf\n", double(ch.x[0]), double(ch.x[1]));
+        }
+
+      ld y = pt.x[1];
+      y *= 2; y -= 1; // -1 .. 1
+      y *= M_PI / 2;
+      y = -2 * atanh(tan(y/2));
+      
+      int sca = 1;
+      
+      ld coshy = cosh(y);
+      
+      ld xx = (pt.x[0] - ch.x[0]) * M_PI /  si.cscale[0];
+      
+      xx *= sca; y *= sca;
+      
+      if(abs(y) < .1 || intdif(xx) < .05 / coshy || intdif(y) < .1 && intdif(xx) < .25 / coshy)
+        pix = 0;
+      else
+        pix = 0xFFFFFF;
+
+      // pix = ((int(100 + sca * (pt.x[0] - ch.x[0]) / si.cscale[0]) + int(100 + sca /M_PI * y /* pt.x[1] */)) & 1) ? 0xFFFFFF : 0x0;
+      // pix = ((int(100 + M_PI * sca * (pt.x[0] - ch.x[0]) / si.cscale[0]) + int(100 + sca * y /* pt.x[1] */)) & 1) ? 0xFFFFFF : 0x0;
+      }
+    else if(view_error) {
+      cpoint c = pts[y][x].x;
+      auto [vx,vy] = unband(c, si, -si.xcenter);
+      hyperpoint p = equirectangular(vx, vy);
+      cpoint pt = hyper_to_disk(p);
+      cpoint bycoord;
+      bycoord[0] = am[1][0] * x + am[0][0];
+      bycoord[1] = am[1][1] * y + am[0][1];
+      
+      part(pix, 0) = 128 + 100 * (pt[0] - bycoord[0])  / max_error;
+      part(pix, 1) = 128 + 100 * (pt[1] - bycoord[1])  / max_error;
+      part(pix, 2) = 128 + 100 * hypot(pt[0] - bycoord[0], pt[1] - bycoord[1])  / max_error;
+      
+      if(x == mousex && y == mousey)
+        printf("is = %lf %lf should be = %lf %lf\n", double(pt[0]), double(pt[1]), double(bycoord[0]), double(bycoord[1]));
+      }
+    else {
+      part(pix, 0) = int(255 & int(255 * pt.x[0]));
+      part(pix, 1) = int(255 & int(255 * pt.x[1]));        
+      }
+    }
+  else {
+    ld xval = 0, yval = 0;
+    auto dc = band_to_disk(x, y, si, tsiid, xval, yval);
+    auto& tsi = sides[tsiid];
+    if(yval >= bbnd || yval <= -bbnd)
+      b[y][x] = boundary_color;
+    else if(isize(tsi.img_line) > 0 && isize(tsi.img_line) > xval - tsi.zero_shift) {
+      ld nxval = xval - tsi.zero_shift;
+      int xi = int(nxval);
+      hyperpoint p = equirectangular(nxval-xi, yval);
+      cpoint pt = hyper_to_disk(p);  
+      pt = (cpoint{1, 1} + pt) * (tsi.img_line[xi].s->h / 2);
+      b[y][x] = tsi.img_line[xi][pt[1]][pt[0]];
+      }
+    else if(si.img.s)
+      b[y][x] = si.img[dc[1]][dc[0]];
+    else
+      b[y][x] = boundary_color;
+    }
+  
+  if(mark_sides) {
+    part(b[y][x], 2) = part(b[y][x], 2) * 14 / 16 + tsiid * 32 / isize(sides);
+    }
+  }
 
 void draw(bitmap &b) {
   construct_btd();
@@ -929,134 +1163,14 @@ void draw(bitmap &b) {
 
   if(spiral_mode)
     draw_spiral(b, SDL_GetTicks() / 5000.);
-  else
-
-  if(triangle_mode)
+  else if(triangle_mode)
     draw_triangle(b);
-  else
-
-  for(int y=0; y<SY; y++)
-  for(int x=0; x<SX; x++) {
-    auto& p = pts[y][x];
-
-    if(p.type == ptype::outside) {
-    
-      b[y][x] = notypeside;
-
-      if(lined_out)
-      for(int ax=-1; ax<=1; ax++)
-      for(int ay=-1; ay<=1; ay++) {
-        int x1 = x + ax * lined_out;
-        int y1 = y + ay * lined_out;
-        if(x1 >= 0 && y1 >= 0 && x1 < SX && y1 < SY && pts[y1][x1].type != ptype::outside)
-          b[y][x] = boundary_color;
-        }
-
-      continue;
-      }
-    
-    int siid = p.side;
-    int tsiid = siid;
-    if(siid >= size(sides)) continue;
-    auto& si = sides[siid];
-
-    if(si.img_band.size() && !no_images) {
-      ld by = p.x[1];
-      ld bx = p.x[0] - si.xcenter;
-      bx /= si.cscale[0];
-      int sizy = si.img_band[0].s->h;
-      by *= sizy;
-      bx *= sizy;
-      int totalx = 0;
-      for(auto& bandimg: si.img_band) totalx += bandimg.s->w;
-      bx += totalx/2.;
-      bx -= int(bx) / totalx * totalx;
-      if(bx < 0) bx += totalx;
-      for(auto& bandimg: si.img_band) { 
-        if(bx < bandimg.s->w) {
-          b[y][x] = bandimg[by][bx];
-          break;
-          }
-        else bx -= bandimg.s->w;
-        }
-      }
-    else if(no_images || (!si.img.s && !isize(si.img_line))) {
-      int qsides = size(sides);
-      auto& pix = b[y][x];
-      auto& pt = pts[y][x];
-      if(chessmap) {
-        auto ch = pts[chesspos];
-        static bool chess_shown;
-        if(!chess_shown) {
-          chess_shown = true;
-          printf("chess = %lf %lf\n", double(ch.x[0]), double(ch.x[1]));
-          printf("chess to band = %lf %lf\n", double(ch.x[0]), double(ch.x[1]));
-          }
-
-        ld y = pt.x[1];
-        y *= 2; y -= 1; // -1 .. 1
-        y *= M_PI / 2;
-        y = -2 * atanh(tan(y/2));
-        
-        int sca = 1;
-        
-        ld coshy = cosh(y);
-        
-        ld xx = (pt.x[0] - ch.x[0]) * M_PI /  si.cscale[0];
-        
-        xx *= sca; y *= sca;
-        
-        if(abs(y) < .1 || intdif(xx) < .05 / coshy || intdif(y) < .1 && intdif(xx) < .25 / coshy)
-          pix = 0;
-        else
-          pix = 0xFFFFFF;
-  
-        // pix = ((int(100 + sca * (pt.x[0] - ch.x[0]) / si.cscale[0]) + int(100 + sca /M_PI * y /* pt.x[1] */)) & 1) ? 0xFFFFFF : 0x0;
-        // pix = ((int(100 + M_PI * sca * (pt.x[0] - ch.x[0]) / si.cscale[0]) + int(100 + sca * y /* pt.x[1] */)) & 1) ? 0xFFFFFF : 0x0;
-        }
-      else if(view_error) {
-        cpoint c = pts[y][x].x;
-        auto [vx,vy] = unband(c, si, -si.xcenter);
-        hyperpoint p = equirectangular(vx, vy);
-        cpoint pt = hyper_to_disk(p);
-        cpoint bycoord;
-        bycoord[0] = am[1][0] * x + am[0][0];
-        bycoord[1] = am[1][1] * y + am[0][1];
-        
-        part(pix, 0) = 128 + 100 * (pt[0] - bycoord[0])  / max_error;
-        part(pix, 1) = 128 + 100 * (pt[1] - bycoord[1])  / max_error;
-        part(pix, 2) = 128 + 100 * hypot(pt[0] - bycoord[0], pt[1] - bycoord[1])  / max_error;
-        
-        if(x == mousex && y == mousey)
-          printf("is = %lf %lf should be = %lf %lf\n", double(pt[0]), double(pt[1]), double(bycoord[0]), double(bycoord[1]));
-        }
-      else {
-        part(pix, 0) = int(255 & int(255 * pt.x[0]));
-        part(pix, 1) = int(255 & int(255 * pt.x[1]));
-        }
-      }
-    else {
-      ld xval = 0, yval = 0;
-      auto dc = band_to_disk(x, y, si, tsiid, xval, yval);
-      auto& tsi = sides[tsiid];
-      if(yval >= bbnd || yval <= -bbnd)
-        b[y][x] = boundary_color;
-      else if(isize(tsi.img_line) > 0 && isize(tsi.img_line) > xval - tsi.zero_shift) {
-        ld nxval = xval - tsi.zero_shift;
-        int xi = int(nxval);
-        hyperpoint p = equirectangular(nxval-xi, yval);
-        cpoint pt = hyper_to_disk(p);  
-        pt = (cpoint{1, 1} + pt) * (tsi.img_line[xi].s->h / 2);
-        b[y][x] = tsi.img_line[xi][pt[1]][pt[0]];
-        }
-      else if(si.img.s)
-        b[y][x] = si.img[dc[1]][dc[0]];
-      else
-        b[y][x] = boundary_color;
-      }
-    
-    if(mark_sides) {
-      part(b[y][x], 2) = part(b[y][x], 2) * 14 / 16 + tsiid * 32 / isize(sides);
+  else if(cheetah.s)
+    draw_cheetah(b);
+  else {
+    for(int y=0; y<SY; y++)
+    for(int x=0; x<SX; x++) {
+      draw_point(b, x, y);
       }
     }
 
@@ -1099,17 +1213,30 @@ void klawisze() {
       int key = event.key.keysym.sym;
       int uni = event.key.keysym.unicode;
       
-      if(key == '1') anim_speed = .01;
-      if(key == '2') anim_speed = .03;
-      if(key == '3') anim_speed = .1;
-      if(key == '4') anim_speed = .3;
-      if(key == '5') anim_speed = 1;
-      if(key == '6') anim_speed = 3;
-      if(key == '7') anim_speed = 9;
-      if(key == '8') anim_speed = 27;
-      if(key == '9') anim_speed = 81;
-      if(key == '0') anim_speed = 0;
-      if(key == 'r') anim_speed = -anim_speed;
+      if(cheetah.s) {
+        if(key == '0') factor = 0;
+        if(key == '1') factor = 0.125;
+        if(key == '2') factor = 0.25;
+        if(key == '3') factor = 0.375;
+        if(key == '4') factor = 0.5;
+        if(key == '5') factor = 0.625;
+        if(key == '6') factor = 0.75;
+        if(key == '7') factor = 0.875;
+        if(key == '8') factor = 1;
+        }
+      else {
+        if(key == '1') anim_speed = .01;
+        if(key == '2') anim_speed = .03;
+        if(key == '3') anim_speed = .1;
+        if(key == '4') anim_speed = .3;
+        if(key == '5') anim_speed = 1;
+        if(key == '6') anim_speed = 3;
+        if(key == '7') anim_speed = 9;
+        if(key == '8') anim_speed = 27;
+        if(key == '9') anim_speed = 81;
+        if(key == '0') anim_speed = 0;
+        if(key == 'r') anim_speed = -anim_speed;
+        }
       
       if(key == 'i') {
         auto& p = pts[mousey][mousex];
@@ -1267,6 +1394,24 @@ void export_video(ld spd, int cnt, const string& fname) {
       si.xcenter += x;
       si.animshift += x;
       }
+    }
+  }
+
+void export_cheetah(int cnt, const string& fname) {
+  measure_if_needed();
+  mousex = 790; mousey = 332;
+  bitmap b = emptyBitmap(SX/zoomout, SY/zoomout);
+  for(int i=0; i<cnt; i++) {
+    factor = i * 1.0 / (cnt-1);
+    draw(b);
+
+    for(int y=0; y<SY; y++)
+    for(int x=0; x<SX; x++)
+      b[y][x] |= 0xFF000000;
+    char buf[100000];
+    snprintf(buf, 100000, fname.c_str(), i);
+    writePng(buf, b);
+    printf("Saving: %s\n", buf);
     }
   }
 
@@ -1454,6 +1599,12 @@ int main(int argc, char **argv) {
       create_viewlist(current_side, next_arg());
     else if(s == "-cvlimg")
       read_viewlist(current_side, next_arg());
+    else if(s == "-cheetah")
+      cheetah = readPng(next_arg());
+    else if(s == "-excheetah") {
+      int cnt = atoi(next_arg());
+      export_cheetah(cnt, next_arg());
+      }
     else die("unrecognized argument: " + s);
     }
 

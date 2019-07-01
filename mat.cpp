@@ -92,6 +92,15 @@ transmatrix xpush(ld alpha) {
   return T;
   }
   
+transmatrix ypush(ld alpha) {
+  transmatrix T;
+  for(int i=0; i<9; i++) T[i] = 0;
+  T[4] = +cosh(alpha); T[5] = +sinh(alpha);
+  T[0] = 1;
+  T[7] = +sinh(alpha); T[8] = +cosh(alpha);
+  return T;
+  }
+  
 // use periodicity to find the closest copy of the hyperpoint p
 template<class T> T reperiod(T p, const vector<transmatrix>& periods) {
   int iter = 0;

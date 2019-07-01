@@ -222,6 +222,23 @@ triangle-earth: nconf
 triangle-earth-draw: nconf
 	./nconf -lm triangle400.map -li earthspin.png -tm -draw
 
+cheetah.maps: cheetah.png
+	./nconf -mim cheetah.png -joinoff -mapat 368 136 -sma cheetah.maps -draw
+
+draw-cheetah: nconf cheetah.maps
+	./nconf -ntswhite -btblack -lineout 3 -lma cheetah.maps -cheetah 3185.png -draw
+
+leopard.maps: nconf leopard.png
+	./nconf -mim leopard2.png -joinoff -zo 3 -mapat 1524 1116 -sma leopard.maps -draw
+
+draw-leopard: nconf
+	./nconf -zo 3 -ntswhite -btblack -lineout 3 -lma leopard.maps -cheetah leopard.png -draw
+
+video-leopard: nconf
+	./nconf -zo 3 -ntswhite -btblack -lineout 3 -lma leopard.maps -cheetah leopard.png -excheetah 50 cheetah/%02d.png
+
+ex-leopard: nconf
+	./nconf -ntswhite -btblack -lineout 3 -lma leopard.maps -li poincare.png -zebra -period 1 -export draw-leopard.png
 
 debug: nconf-debug
 	gdb nconf-debug
