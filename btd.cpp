@@ -96,7 +96,7 @@ void construct_btd_for(sideinfo& si) {
     }
   
   else {      
-    auto& root = rootof(si);
+    // auto& root = rootof(si);
     auto& par = sides[si.parentid];
     par.need_btd = true;
     
@@ -222,7 +222,7 @@ void prepare_all_matrices() {
     if(inner(p.type)) {
       ld xval = 0, yval = 0;
       int tsiid = p.side;
-      auto dc = band_to_disk(x, y, sides[tsiid], tsiid, xval, yval);
+      /*auto dc =*/ band_to_disk(x, y, sides[tsiid], tsiid, xval, yval);
       }
     }
   }
@@ -245,7 +245,7 @@ void create_viewlist(int current_side, string fname) {
   fclose(f);
   }
 
-void read_viewlist(int current_side, string format) {
+void read_viewlist(int /* ignored current_side */, string format) {
   prepare_all_matrices();
 
   for(auto& si: sides) {

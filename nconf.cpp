@@ -243,7 +243,7 @@ ld hypot(ipoint a) { return std::hypot(a.x, a.y); }
 tuple<ipoint, int> boundary_point_near(pointmap& ptmap, ipoint cxy) {
   ld bestdist = 1e8;
   int ad;
-  ipoint axy;
+  ipoint axy (0, 0);
     
   for(int x=1; x<SX-1; x++) for(int y=1; y<SY-1; y++) {
     ipoint xy(x, y);
@@ -505,10 +505,11 @@ void drawstates(pointmap& ptmap) {
     for(int y=0; y<SY/zoomout; y++)
     for(int x=0; x<SX/zoomout; x++) {
       auto& p = zoomed ? ptmap[(y*zoomout+zy)/4][(x*zoomout+zx)/4] : ptmap[y*zoomout][x*zoomout];
-      screen[y][x] = statecolors[p.state];
+      screen[y][x] = statecolors[int(p.state)];
       if(p.state == 0) switch(p.type) {
         case ptype::top: screen[y][x] = 0xFFFFFF; break;
         case ptype::bottom: screen[y][x] = 0xFF00FF; break;
+        default: ;
         }
       part(screen[y][x], 2) = itc(isize(p.eqs));
       if(find_equation(pt.eqs, p)) part(screen[y][x], 2) = 0x80;
@@ -520,7 +521,7 @@ void drawstates(pointmap& ptmap) {
     SDL_Event event;
     SDL_Delay(1);
     int ev;
-    while(ev = SDL_PollEvent(&event)) switch (event.type) {
+    while((ev = SDL_PollEvent(&event))) switch (event.type) {
       case SDL_QUIT:
         exit(1);
         return;
@@ -533,7 +534,7 @@ void drawstates(pointmap& ptmap) {
       
       case SDL_KEYDOWN: {
         int key = event.key.keysym.sym;
-        int uni = event.key.keysym.unicode;
+        // int uni = event.key.keysym.unicode;
 
         if(key == 'p') paused = !paused;
         if(key == 'z') zx = mousex*zoomout*3, zy = mousey*zoomout*3, zoomed = !zoomed;
@@ -716,7 +717,7 @@ void computemap(pointmap& ptmap) {
         int cpct = citer * 1000 / size(allpoints);
         if(cpct != lastpct) {
           lastpct = cpct;
-          if(text_progress) printf("  %d/1000 [%d]\n", cpct, size(p.eqs));
+          if(text_progress) printf("  %d/1000 [%d]\n", cpct, isize(p.eqs));
           int nextt = SDL_GetTicks();
           if(nextt > lastt + 100) {
             drawstates(ptmap);
@@ -983,13 +984,13 @@ void draw_cheetah(bitmap &b) {
   ld xd = sides[0].xcenter;
   ld yd = 0;
   
-  ld alpha;
+  ld alpha = 0;
   
   if(true) {
     printf("mousex = %d mousey = %d\n", mousex, mousey);
     auto& p = pts[mousey*zoomout][mousex*zoomout];
     int siid = p.side;
-    if(siid < size(sides) && inner(p.type)) {
+    if(siid < isize(sides) && inner(p.type)) {
       xd = p.x[0];
       yd = unband(p.x, sides[siid], -xd).second;
 
@@ -1035,12 +1036,12 @@ void draw_cheetah(bitmap &b) {
 
     if(p.type != ptype::outside) {
       int siid = p.side;
-      if(siid >= size(sides)) continue;
+      if(siid >= isize(sides)) continue;
       auto& si = sides[siid];
       
       auto ixy = unmargin(ipoint{x,y});
 
-      auto& px = b[y/zoomout][x/zoomout];
+      // auto& px = b[y/zoomout][x/zoomout];
       
       // px = cheetah[ixy.y][ixy.x];
       cpoint c = pts[y][x].x;
@@ -1086,7 +1087,7 @@ void draw_point(bitmap& b, int x, int y) {
   
   int siid = p.side;
   int tsiid = siid;
-  if(siid >= size(sides)) return;
+  if(siid >= isize(sides)) return;
   auto& si = sides[siid];
 
   if(si.img_band.size() && !no_images) {
@@ -1110,7 +1111,7 @@ void draw_point(bitmap& b, int x, int y) {
       }
     }
   else if(no_images || (!si.img.s && !isize(si.img_line))) {
-    int qsides = size(sides);
+    // int qsides = size(sides);
     auto& pix = b[y][x];
     auto& pt = pts[y][x];
     if(chessmap) {
@@ -1135,7 +1136,7 @@ void draw_point(bitmap& b, int x, int y) {
       
       xx *= sca; y *= sca;
       
-      if(abs(y) < .1 || intdif(xx) < .05 / coshy || intdif(y) < .1 && intdif(xx) < .25 / coshy)
+      if(abs(y) < .1 || intdif(xx) < .05 / coshy || (intdif(y) < .1 && intdif(xx) < .25 / coshy))
         pix = 0;
       else
         pix = 0xFFFFFF;
@@ -1226,7 +1227,7 @@ void klawisze() {
   SDL_Event event;
   SDL_Delay(1);
   int ev;
-  while(ev = SDL_PollEvent(&event)) switch (event.type) {
+  while((ev = SDL_PollEvent(&event))) switch (event.type) {
     case SDL_QUIT:
       break_loop = true;
       return;
@@ -1243,7 +1244,7 @@ void klawisze() {
     
     case SDL_KEYDOWN: {
       int key = event.key.keysym.sym;
-      int uni = event.key.keysym.unicode;
+      // int uni = event.key.keysym.unicode;
       
       if(cheetah.s) {
         if(key == '0') factor = 0;

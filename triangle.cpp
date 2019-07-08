@@ -52,11 +52,11 @@ cpoint band_to_disk_basic(cpoint c, sideinfo& si) {
 vector2<cld> map_to_stereo;
 
 void draw_triangle(bitmap& b) {
-  int edgelength = SX/3;
+  // int edgelength = SX/3;
   
   map_to_stereo.resize2(SX, SY);
 
-  sideinfo *goodside;
+  sideinfo *goodside = NULL;
     
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++) { 

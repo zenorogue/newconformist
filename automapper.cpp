@@ -224,7 +224,7 @@ void auto_map_at(ipoint at) {
       if(pts[y][x].type == ptype::outside)
         pts[y][x].type = ptype::bottom;
 
-    ipoint splitat;
+    ipoint splitat(0, 0);
     for(int y=0; y<SY; y++)
     for(int x=0; x<SX; x++)
       if(pts[y][x].type == ptype::bottom && pts[y][x-1].type == ptype::inside) {
@@ -264,7 +264,7 @@ void drawsides() {
     SDL_Event event;
     SDL_Delay(1);
     int ev;
-    while(ev = SDL_PollEvent(&event)) switch (event.type) {
+    while((ev = SDL_PollEvent(&event))) switch (event.type) {
       case SDL_QUIT:
         exit(1);
         return;
@@ -277,7 +277,7 @@ void drawsides() {
       
       case SDL_KEYDOWN: {
         int key = event.key.keysym.sym;
-        int uni = event.key.keysym.unicode;
+        // int uni = event.key.keysym.unicode;
 
         if(key == 'p') paused = !paused;
         

@@ -9,11 +9,11 @@ cld mix(cld a1, cld a2, ld a, ld b, ld c) {
   }
 
 void draw_spiral(bitmap& b, ld t) {
-  int edgelength = SX/3;
+  // int edgelength = SX/3;
   
   cld a (mousex, mousey);
   
-  double d = mousex * 1. / SX;
+  // double d = mousex * 1. / SX;
   
   ld bscale = 1/3.2;
   
