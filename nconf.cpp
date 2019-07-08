@@ -70,6 +70,8 @@ enum class ptype : char { outside, inside, inside_left_up, inside_left_down, top
 bool inner(ptype t) { return int(t) > 0 && int(t) < 4; }
 bool infinitary(ptype t) { return int(t) >= 6; }
 
+bool inner_border(ptype t) { return t == ptype::inside || t == ptype::top || t == ptype::bottom; }
+
 // the four directions
 
 ipoint dv[4] = { ipoint(1, 0), ipoint(0, -1), ipoint(-1, 0), ipoint(0, 1) };  
@@ -565,62 +567,134 @@ array<ipoint, 4> find_neighbors(pointmap& ptmap, ipoint xy) {
 
 // compute the mapping, after every pixel/datapoint has been given a type
 
+bool pretty_borders = false;
+
+vector<ipoint> allpoints;
+
+void build_equations(pointmap& ptmap, int i) {
+  printf("Building eqs, i=%d\n", i);
+  
+  for(int y=0; y<SY; y++) 
+  for(int x=0; x<SX; x++) {
+    auto& p = ptmap[y][x];
+    p.state = 0;
+
+    if(pretty_borders && i == 0 ? !inner_border(p.type) : !inner(p.type)) continue;
+    p.state = 1;
+    p.eqs.clear();
+    p.bonus = 0;
+
+    p.x[i] = 0;
+    p.bonus = 0;
+    
+    ipoint xy(x, y);
+    
+    auto nei = find_neighbors(ptmap, xy);
+
+    if(i == 0) {
+      int xp = 0;
+      for(auto np: nei) {
+        auto t = ptmap[np].type;
+        if(inner(t) || infinitary(t) || (pretty_borders && inner_border(t))) xp++;
+        }
+      for(auto np: nei) {
+        auto& p2 = ptmap[np];
+        if(p2.type == ptype::left_inf) p.bonus += 0;
+        else if(p2.type == ptype::right_inf) p.bonus += 1./xp;
+        else if(pretty_borders ? inner_border(p2.type) : inner(p2.type)) {
+          p.eqs.emplace_back(&p2, 1./xp);
+          if(p.type == ptype::inside_left_up && p2.type == ptype::inside_left_down) p.bonus += 1./xp;
+          if(p.type == ptype::inside_left_down && p2.type == ptype::inside_left_up) p.bonus -= 1./xp;
+          }
+        }
+      }
+    if(i == 1) {
+      for(auto np: nei) {
+        auto& p2 = ptmap[np];
+        if(p2.type == ptype::top) p.bonus += 0; 
+        else if(p2.type == ptype::bottom) p.bonus += 1./4; 
+        else if(infinitary(p2.type)) p.bonus += 1./8;
+        else {
+          p.eqs.emplace_back(&p2, 1./4);
+          }
+        }
+      }
+    sort(p.eqs.begin(), p.eqs.end());
+    }
+  
+  allpoints.clear();
+  for(int y=0; y<SY; y++) 
+  for(int x=0; x<SX; x++) if(ptmap[y][x].state == 1) allpoints.push_back({x, y});
+  sort(allpoints.begin(), allpoints.end(), [&ptmap] (auto p1, auto p2) { return ptmap[p1].pointorder < ptmap[p2].pointorder; });
+  }
+
+void eliminate(pointmap& ptmap, ipoint co) {
+  auto &p = ptmap[co];
+  ld self = find_equation(p.eqs, p);
+  
+  if(self) {
+    if(self == 1) {
+      printf("Variable eliminated at (%d,%d)\n", co.x, co.y);
+      p.state = 3;
+      }
+    else {
+      ld fac = 1 / (1 - self);
+      auto b = p.eqs.begin();
+      for(auto &pa: p.eqs) if(pa.first != &p) *(b++) = {pa.first, pa.second * fac};
+      p.eqs.resize(b - p.eqs.begin());
+      p.bonus *= fac;
+      }
+    }
+  
+  for(auto& pa: p.eqs) {
+    auto& p2 = *pa.first;
+
+    ld mirror = find_equation(p2.eqs, p);
+    if(!mirror) continue;
+
+    p2.bonus += p.bonus * mirror;
+    vector<equation> new_equations;
+    new_equations.reserve(max(isize(p2.eqs), isize(p.eqs)) + 4);
+    auto old = p2.eqs.begin();
+    auto extra = p.eqs.begin();
+    while(old != p2.eqs.end() && extra != p.eqs.end())
+      if(old->first < extra->first) {
+        if(old->first == &p) old++;
+        else new_equations.push_back(*old), old++;
+        }
+      else if(old->first > extra->first)
+        new_equations.emplace_back(extra->first, extra->second * mirror), extra++;
+      else
+        new_equations.emplace_back(old->first, old->second + extra->second * mirror), old++, extra++;
+    while(old != p2.eqs.end()) {
+      if(old->first == &p) old++;
+      else new_equations.push_back(*old), old++;
+      }
+    while(extra != p.eqs.end())
+      new_equations.emplace_back(extra->first, extra->second * mirror), extra++;
+      
+    p2.eqs = std::move(new_equations);
+    }
+  p.state = 2;
+  }
+
+void retrieve(pointmap& ptmap, int i) {
+  printf("Solution retrieval\n");
+  reverse(allpoints.begin(), allpoints.end());
+  for(auto co: allpoints) {
+    auto &p = ptmap[co];
+    if(p.state != 2) continue;
+    p.x[i] = p.bonus;
+    for(auto& pa: p.eqs) p.x[i] += pa.second * pa.first->x[i];
+    p.eqs = vector<equation> ();
+    }
+  allpoints.clear();
+  }
+
 void computemap(pointmap& ptmap) {
 
   for(int i=0; i<2; i++) {
-    printf("Building eqs, i=%d\n", i);
-    
-    for(int y=0; y<SY; y++) 
-    for(int x=0; x<SX; x++) {
-      auto& p = ptmap[y][x];
-      p.state = 0;
-      if(!inner(p.type)) continue;
-      p.state = 1;
-      p.eqs.clear();
-      p.bonus = 0;
-
-      p.x[i] = 0;
-      p.bonus = 0;
-      
-      ipoint xy(x, y);
-      
-      auto nei = find_neighbors(ptmap, xy);
-
-      if(i == 0) {
-        int xp = 0;
-        for(auto np: nei) {
-          auto t = ptmap[np].type;
-          if(inner(t) || infinitary(t)) xp++;
-          }
-        for(auto np: nei) {
-          auto& p2 = ptmap[np];
-          if(p2.type == ptype::left_inf) p.bonus += 0;
-          else if(p2.type == ptype::right_inf) p.bonus += 1./xp;
-          else if(inner(p2.type)) {
-            p.eqs.emplace_back(&p2, 1./xp);
-            if(p.type == ptype::inside_left_up && p2.type == ptype::inside_left_down) p.bonus += 1./xp;
-            if(p.type == ptype::inside_left_down && p2.type == ptype::inside_left_up) p.bonus -= 1./xp;
-            }
-          }
-        }
-      if(i == 1) {
-        for(auto np: nei) {
-          auto& p2 = ptmap[np];
-          if(p2.type == ptype::top) p.bonus += 0; 
-          else if(p2.type == ptype::bottom) p.bonus += 1./4; 
-          else if(infinitary(p2.type)) p.bonus += 1./8;
-          else {
-            p.eqs.emplace_back(&p2, 1./4);
-            }
-          }
-        }
-      sort(p.eqs.begin(), p.eqs.end());
-      }
-    
-    vector<ipoint> allpoints;
-    for(int y=0; y<SY; y++) 
-    for(int x=0; x<SX; x++) if(ptmap[y][x].state == 1) allpoints.push_back({x, y});
-    sort(allpoints.begin(), allpoints.end(), [&ptmap] (auto p1, auto p2) { return ptmap[p1].pointorder < ptmap[p2].pointorder; });
+    build_equations(ptmap, i);
     
     int lastt = SDL_GetTicks();
     printf("Gaussian elimination\n");
@@ -642,64 +716,10 @@ void computemap(pointmap& ptmap) {
         }
       citer++;
       
-      ld self = find_equation(p.eqs, p);
-      
-      if(self) {
-        if(self == 1) {
-          printf("Variable eliminated at (%d,%d)\n", co.x, co.y);
-          p.state = 3;
-          }
-        else {
-          ld fac = 1 / (1 - self);
-          auto b = p.eqs.begin();
-          for(auto &pa: p.eqs) if(pa.first != &p) *(b++) = {pa.first, pa.second * fac};
-          p.eqs.resize(b - p.eqs.begin());
-          p.bonus *= fac;
-          }
-        }
-      
-      for(auto& pa: p.eqs) {
-        auto& p2 = *pa.first;
-
-        ld mirror = find_equation(p2.eqs, p);
-        if(!mirror) continue;
-
-        p2.bonus += p.bonus * mirror;
-        vector<equation> new_equations;
-        new_equations.reserve(max(isize(p2.eqs), isize(p.eqs)) + 4);
-        auto old = p2.eqs.begin();
-        auto extra = p.eqs.begin();
-        while(old != p2.eqs.end() && extra != p.eqs.end())
-          if(old->first < extra->first) {
-            if(old->first == &p) old++;
-            else new_equations.push_back(*old), old++;
-            }
-          else if(old->first > extra->first)
-            new_equations.emplace_back(extra->first, extra->second * mirror), extra++;
-          else
-            new_equations.emplace_back(old->first, old->second + extra->second * mirror), old++, extra++;
-        while(old != p2.eqs.end()) {
-          if(old->first == &p) old++;
-          else new_equations.push_back(*old), old++;
-          }
-        while(extra != p.eqs.end())
-          new_equations.emplace_back(extra->first, extra->second * mirror), extra++;
-          
-        p2.eqs = std::move(new_equations);
-        }
-      p.state = 2;
+      eliminate(ptmap, co);
       }
     
-    printf("Solution retrieval\n");
-    reverse(allpoints.begin(), allpoints.end());
-    for(auto co: allpoints) {
-      auto &p = ptmap[co];
-      if(p.state != 2) continue;
-      p.x[i] = p.bonus;
-      for(auto& pa: p.eqs) p.x[i] += pa.second * pa.first->x[i];
-      p.eqs = vector<equation> ();
-      }
-    
+    retrieve(ptmap, i);    
     printf("Done.\n");        
     }
   }
