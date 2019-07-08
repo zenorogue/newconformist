@@ -41,7 +41,20 @@ int lined_out;
 
 typedef std::complex<ld> cld;
 
-using namespace std;
+using std::isnan;
+using std::vector;
+using std::printf;
+using std::string;
+using std::pair;
+using std::array;
+using std::sort;
+using std::make_pair;
+using std::tie;
+using std::tuple;
+using std::min;
+using std::max;
+using std::make_tuple;
+using std::queue;
 
 int elim_order = 3;
 
