@@ -1,6 +1,7 @@
 // translate computed coordinates to Poincare disk coordinates
 // includes the algorithm for syncing the branched shapes (construct_btd)
 
+namespace nconf {
 ld cspin;
 
 pair<ld, ld> unband(cpoint& c, sideinfo& si, ld shift) {
@@ -260,3 +261,4 @@ void read_viewlist(int current_side, string format) {
       }
     }
   }
+}

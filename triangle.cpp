@@ -1,3 +1,4 @@
+namespace nconf {
 void create_triangle(int edgelength) {
   single_side(stype::standard);
   SX = edgelength * 3;
@@ -18,7 +19,7 @@ bool mirror(double& dx, double& dy, double ax, double ay, double cx, double cy) 
   double adx = dx - ax, ady = dy - ay;
   cx -= ax; cy -= ay;
   
-  ld d = hypot(cx, cy); cx /= d; cy /= d;
+  ld d = std::hypot(cx, cy); cx /= d; cy /= d;
   ld cros = adx * cy - ady * cx;
 
   if(cros < 0) {
@@ -133,3 +134,4 @@ void draw_triangle(bitmap& b) {
   printf("draw\n");
   }
 
+}

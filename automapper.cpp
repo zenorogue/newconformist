@@ -1,5 +1,6 @@
 // implementations of -mapat and -mapall
 
+namespace nconf {
 ipoint get_last_point(pointmap& ptmap, ipoint start) {
   vector<ipoint> q;
   ptmap[start].type = ptype::marked; q.push_back(start);
@@ -107,7 +108,7 @@ void auto_joins() {
       
       if(p.type == ptype::inside) {
        
-        ld err = hypot(pold.x[0] - ppts[ending].x[0], pold.x[1] - (over ? 1-join_y : join_y));
+        ld err = std::hypot(pold.x[0] - ppts[ending].x[0], pold.x[1] - (over ? 1-join_y : join_y));
         if(err < error) error = err, side.join = xy;
       
         ld nlow = frac(pold.x[0] - ppts[ending].x[0] + 2.5);
@@ -389,3 +390,4 @@ void load_all_maps(const string fname) {
     }
   fclose(f);
   }
+}

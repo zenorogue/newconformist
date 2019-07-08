@@ -29,6 +29,9 @@
 #include <queue>
 #include <complex>
 
+namespace nconf {
+using namespace graph2;
+
 bool chessmap = false;
 ipoint chesspos;
 
@@ -47,10 +50,12 @@ ld spinspeed;
 bool use_childsides = true;
 
 bool view_error = false;
+}
 
 #include "mat.cpp"
 #include "zebra.cpp"
 
+namespace nconf {
 int SX, SY;
 
 // Side types.
@@ -138,9 +143,11 @@ struct sideinfo {
 vector<sideinfo> sides;
 
 sideinfo& rootof(const sideinfo& si) { return sides[si.rootid]; }
+}
 
 #include "btd.cpp"
 
+namespace nconf {
 ld scalex = 1, scaley = 1;
 int marginx = 32, marginy = 32;
 
@@ -229,7 +236,7 @@ void split_boundary(pointmap& ptmap, ipoint axy, ipoint bxy, int d) {
     }
   }
 
-ld hypot(ipoint a) { return hypot(a.x, a.y); }
+ld hypot(ipoint a) { return std::hypot(a.x, a.y); }
 
 // find the point on the boundary nearest to cxy
 
@@ -457,11 +464,14 @@ void saveb(const string& s) {
   }
 
 int mousex, mousey;
+}
 
 // 'unofficial' experiments that newconformist has been used for
 #include "triangle.cpp"
 #include "quincunx.cpp"
 #include "spiral.cpp"
+
+namespace nconf {
 
 void klawisze();
 
@@ -571,7 +581,7 @@ bool pretty_borders = false;
 
 vector<ipoint> allpoints;
 
-void build_equations(pointmap& ptmap, int i) {
+void build_equations(pointmap& ptmap, int i, bool fast) {
   printf("Building eqs, i=%d\n", i);
   
   for(int y=0; y<SY; y++) 
@@ -625,7 +635,7 @@ void build_equations(pointmap& ptmap, int i) {
   allpoints.clear();
   for(int y=0; y<SY; y++) 
   for(int x=0; x<SX; x++) if(ptmap[y][x].state == 1) allpoints.push_back({x, y});
-  sort(allpoints.begin(), allpoints.end(), [&ptmap] (auto p1, auto p2) { return ptmap[p1].pointorder < ptmap[p2].pointorder; });
+  if(fast) sort(allpoints.begin(), allpoints.end(), [&ptmap] (auto p1, auto p2) { return ptmap[p1].pointorder < ptmap[p2].pointorder; });
   }
 
 void eliminate(pointmap& ptmap, ipoint co) {
@@ -694,7 +704,7 @@ void retrieve(pointmap& ptmap, int i) {
 void computemap(pointmap& ptmap) {
 
   for(int i=0; i<2; i++) {
-    build_equations(ptmap, i);
+    build_equations(ptmap, i, true);
     
     int lastt = SDL_GetTicks();
     printf("Gaussian elimination\n");
@@ -895,7 +905,7 @@ void compute_am() {
     auto& p = pts[cy][cx];
     if(p.type != ptype::inside) continue;
     auto y = diskpoint(cx, cy);
-    if(isnan(y[0]) || isnan(y[1]) || hypot(y[0], y[1]) > .9) continue;
+    if(isnan(y[0]) || isnan(y[1]) || std::hypot(y[0], y[1]) > .9) continue;
     cpoint x = { ld(cx), ld(cy) };
     for(int i=0; i<2; i++) {
       sum_x[i] += x[i];
@@ -931,7 +941,7 @@ void compute_am() {
     auto& p = pts[cy][cx];
     if(p.type != ptype::inside) continue;
     auto y = diskpoint(cx, cy);
-    if(isnan(y[0]) || isnan(y[1]) || hypot(y[0], y[1]) > .99999) continue;
+    if(isnan(y[0]) || isnan(y[1]) || std::hypot(y[0], y[1]) > .99999) continue;
     cpoint x = { ld(cx), ld(cy) };
     for(int i=0; i<2; i++) x[i] = x[i] * am[1][i] + am[0][i];
     cpoint dif = x-y;
@@ -960,7 +970,7 @@ void mark_outside(bitmap& b, int x, int y) {
     }
   }
 
-ld hypot(cpoint p) { return hypot(p[0], p[1]); }
+ld hypot(cpoint p) { return std::hypot(p[0], p[1]); }
 
 ld factor = 1;
 
@@ -1144,7 +1154,7 @@ void draw_point(bitmap& b, int x, int y) {
       
       part(pix, 0) = 128 + 100 * (pt[0] - bycoord[0])  / max_error;
       part(pix, 1) = 128 + 100 * (pt[1] - bycoord[1])  / max_error;
-      part(pix, 2) = 128 + 100 * hypot(pt[0] - bycoord[0], pt[1] - bycoord[1])  / max_error;
+      part(pix, 2) = 128 + 100 * std::hypot(pt[0] - bycoord[0], pt[1] - bycoord[1])  / max_error;
       
       if(x == mousex && y == mousey)
         printf("is = %lf %lf should be = %lf %lf\n", double(pt[0]), double(pt[1]), double(bycoord[0]), double(bycoord[1]));
@@ -1436,10 +1446,12 @@ void export_cheetah(int cnt, const string& fname) {
     printf("Saving: %s\n", buf);
     }
   }
+}
 
 #include "automapper.cpp"
 
 int main(int argc, char **argv) {
+  using namespace nconf;
   int i = 1;
   auto next_arg = [&] () { if(i == argc) die("not enough arguments"); return argv[i++]; };
   auto next_arg_ipoint = [&] () { int x = atoi(next_arg()); int y = atoi(next_arg()); return ipoint(x, y); };

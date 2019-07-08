@@ -11,6 +11,8 @@
 #include <SDL/SDL.h>
 #include <gd.h>
 
+namespace graph2 {
+
 // ipoint
 
 struct ipoint {
@@ -163,4 +165,5 @@ void writePng(const std::string& fname, const bitmap& bmp) {
   fclose(f);
   }
 
+}
 #endif

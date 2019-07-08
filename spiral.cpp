@@ -1,6 +1,7 @@
 #include <complex>
 #include <iostream>
 
+namespace nconf {
 bool spiral_mode = false;
 
 cld mix(cld a1, cld a2, ld a, ld b, ld c) {
@@ -150,3 +151,4 @@ void draw_spiral(bitmap& b, ld t) {
   b.draw();
   }
 
+}

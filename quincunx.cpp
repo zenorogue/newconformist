@@ -1,3 +1,4 @@
+namespace nconf {
 void create_diamond(int edgelength) {
   single_side(stype::standard);
   SX = SY = edgelength * 2 + 1;
@@ -59,3 +60,4 @@ void load_image_for_quincunx(const string& fname, ld scale) {
   writePng("side0.png", sides[0].img);
   writePng("side1.png", sides[1].img);
   }
+}

@@ -1,6 +1,8 @@
 // Hyperbolic geometry operations
 // Copyright (C) 2018 Zeno Rogue, see 'nconf.cpp' for details
 
+namespace nconf {
+
 // a point in the band coordinates or Poincare disk coordinates
 typedef array<ld, 2> cpoint;
 
@@ -131,3 +133,4 @@ void fixmatrix(transmatrix& T) {
   }
 
 template<class T> int isize(const T& t) { return t.size(); }
+}
