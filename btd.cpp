@@ -205,8 +205,12 @@ cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& xval, ld& yval
     }
   
   cpoint pt = hyper_to_disk(p);  
+  #if CAP_BMP
   if(!si.img.s) return pt;
   return (cpoint{1, 1} + pt) * (si.img.s->h / 2);
+  #else
+  return pt;
+  #endif
   }
 
 void measure_if_needed();
@@ -245,6 +249,7 @@ void create_viewlist(int current_side, string fname) {
   fclose(f);
   }
 
+#if CAP_GD
 void read_viewlist(int /* ignored current_side */, string format) {
   prepare_all_matrices();
 
@@ -261,4 +266,5 @@ void read_viewlist(int /* ignored current_side */, string format) {
       }
     }
   }
+#endif
 }

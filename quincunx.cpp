@@ -39,7 +39,8 @@ int gmodc(int x, int siz) {
   if(x < 0) x += siz;
   return x;
   }
-  
+
+#if CAP_GD  
 void load_image_for_quincunx(const string& fname, ld scale) {
   bitmap b = readPng(fname);
   int Res = 1000;
@@ -60,4 +61,5 @@ void load_image_for_quincunx(const string& fname, ld scale) {
   writePng("side0.png", sides[0].img);
   writePng("side1.png", sides[1].img);
   }
+#endif
 }

@@ -133,6 +133,7 @@ void auto_joins() {
     }
   }
 
+#if CAP_BMP
 void auto_map_at(ipoint at) {
   current_side = new_side(stype::standard).id;
   cside().inner_point = at;
@@ -248,7 +249,9 @@ void auto_map_at(ipoint at) {
   
   merge_sides();
   }
-  
+#endif
+
+#if CAP_DRAW  
 void drawsides() {
   paused = true;
   do {
@@ -288,7 +291,9 @@ void drawsides() {
     }
   while(paused);  
   }
+#endif
 
+#if CAP_BMP
 void auto_map_all() {
   for(int y=0; y<SY; y++)
   for(int x=0; x<SX; x++)
@@ -301,6 +306,7 @@ void auto_map_all() {
       auto_map_at(ipoint(x, y));  
       }
   }
+#endif
 
 void save_all_maps(const string fname) {
   FILE *f = fopen(fname.c_str(), "wb");

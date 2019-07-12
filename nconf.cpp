@@ -15,6 +15,18 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef CAP_GD
+#define CAP_GD 1
+#endif
+
+#ifndef CAP_DRAW
+#define CAP_DRAW 1
+#endif
+
+#ifndef CAP_BMP
+#define CAP_BMP (CAP_GD | CAP_DRAW)
+#endif
+
 #include "graph2.h"
 #include <unistd.h>
 #include <unordered_map>
@@ -99,8 +111,10 @@ void resize_pt();
 bool draw_progress = true;
 bool text_progress = true;
 
+#if CAP_GD
 // the bitmap used for the shape (called 'heart' because heart was the first bitmap shape)
 bitmap heart;
+#endif
 
 typedef pair<struct datapoint*, ld> equation;
 
@@ -130,8 +144,10 @@ pointmap pts;
 // information about a side
 
 struct sideinfo {
+  #if CAP_BMP
   bitmap img;
   vector<bitmap> img_band;
+  #endif
   cpoint cscale;     // cscale[0] says how we should rescale the X coordinates -- we should divide them by cscale[0]
   ipoint inner_point;
   ld xcenter;
@@ -150,7 +166,10 @@ struct sideinfo {
   int parentid, rootid;
   transmatrix parentrel_matrix;
   int parentrel_x;
+  #if CAP_BMP
   vector<bitmap> img_line;
+  #endif
+  
   };
 
 vector<sideinfo> sides;
@@ -272,6 +291,7 @@ tuple<ipoint, int> boundary_point_near(pointmap& ptmap, ipoint cxy) {
   return make_tuple(axy, ad);
   }
 
+#if CAP_BMP
 // compute SX and SY based on heart
 void set_SXY(bitmap& heart) {
   int newSX = heart.s->w / scalex + marginx + marginx;
@@ -286,12 +306,15 @@ void set_SXY(bitmap& heart) {
 
   resize_pt();
   }  
+#endif
 
+#if CAP_GD
 void load_image_for_mapping(const string& fname) {
   heart = readPng(fname);
   errpixel = heart[0][0];
   set_SXY(heart);
   }
+#endif
 
 // create a circular shape
 
@@ -335,12 +358,15 @@ ipoint addmargin(ipoint xy) {
   return ipoint(xy.x/scalex+marginx, xy.y/scaley+marginy);
   }
 
+#if CAP_BMP
 unsigned& get_heart(ipoint xy) {
   return heart[unmargin(xy)];
   }
+#endif
 
 // prepare a ring for mapping, including the given point
 
+#if CAP_BMP
 void createb_outer(ipoint cxy) {
   create_side(stype::ring);
   
@@ -397,9 +423,11 @@ void createb_outer(ipoint cxy) {
       boundary.emplace(xy + dv[d]);
     }
   }
+#endif
 
 // prepare a stype::standard for mapping, including the given point
 
+#if CAP_BMP
 void createb_inner(ipoint axy, ipoint bxy) {
   create_side(stype::standard);
 
@@ -430,6 +458,7 @@ void createb_inner(ipoint axy, ipoint bxy) {
   
   split_boundary(pts, axy1, bxy1, bd^2);
   }
+#endif
 
 // create the Hilbert curve shape
 
@@ -505,6 +534,7 @@ ld find_equation(vector<equation>& v, datapoint& p) {
 
 // draw the state of computation during mapping
 
+#if CAP_DRAW
 void drawstates(pointmap& ptmap) {
   do {
     if(!draw_progress) return;
@@ -560,6 +590,7 @@ void drawstates(pointmap& ptmap) {
   } while(paused);
   
   }
+#endif
 
 array<ipoint, 4> find_neighbors(pointmap& ptmap, ipoint xy) {
   array<ipoint, 4> res;
@@ -731,11 +762,13 @@ void computemap(pointmap& ptmap) {
         if(cpct != lastpct) {
           lastpct = cpct;
           if(text_progress) printf("  %d/1000 [%d]\n", cpct, isize(p.eqs));
+          #if CAP_DRAW
           int nextt = SDL_GetTicks();
           if(nextt > lastt + 100) {
             drawstates(ptmap);
             lastt = SDL_GetTicks();
             }
+          #endif
           }
         }
       citer++;
@@ -967,10 +1000,13 @@ void compute_am() {
   printf("max error = %lf (%lf pixels)\n", double(max_error), double(max_error * SX / 2));  
   }
 
+#if CAP_BMP
 bitmap cheetah;
+#endif
 
 // draw the result image (on the given bitmap, which could be the screen)
 
+#if CAP_BMP
 void mark_outside(bitmap& b, int x, int y) {
   b[y][x] = notypeside;
 
@@ -983,6 +1019,7 @@ void mark_outside(bitmap& b, int x, int y) {
       b[y][x] = boundary_color;
     }
   }
+#endif
 
 ld hypot(cpoint p) { return std::hypot(p[0], p[1]); }
 
@@ -992,6 +1029,7 @@ int icrad = 270;
 
 bool use_back = false;
 
+#if CAP_BMP
 void draw_cheetah(bitmap &b) {
 
   ld xd = sides[0].xcenter;
@@ -1089,7 +1127,9 @@ void draw_cheetah(bitmap &b) {
     b[y][x] = cheetah_what[y][x];
   */
   }
+#endif
 
+#if CAP_BMP
 void draw_point(bitmap& b, int x, int y) {
   auto& p = pts[y][x];
 
@@ -1199,10 +1239,12 @@ void draw_point(bitmap& b, int x, int y) {
     }
   
   if(mark_sides) {
-    part(b[y][x], 2) = part(b[y][x], 2) * 14 / 16 + tsiid * 32 / isize(sides);
+    part(b[y][x], 2) = part(b[y][x], 2) * 1 / 16 + tsiid * 240 / (isize(sides) - 1);
     }
   }
+#endif
 
+#if CAP_BMP
 void draw(bitmap &b) {
   construct_btd();
   b.belocked();
@@ -1229,6 +1271,7 @@ void draw(bitmap &b) {
       }
   b.draw();
   }
+#endif
 
 ld anim_speed;
 
@@ -1236,6 +1279,7 @@ bool break_loop = false;
 
 // handle keys after drawing the result image
 
+#if CAP_DRAW
 void klawisze() {
   SDL_Event event;
   SDL_Delay(1);
@@ -1310,7 +1354,9 @@ void klawisze() {
     
     }
   }
+#endif
 
+#if CAP_GD
 void load_image(const string& fname) {
   csideroot().img = readPng(fname); 
   }
@@ -1318,6 +1364,7 @@ void load_image(const string& fname) {
 void load_image_band(const string& fname) {
   csideroot().img_band.push_back(readPng(fname));
   }
+#endif
 
 bool need_measure = true;
 
@@ -1388,6 +1435,7 @@ void measure_if_needed() {
     }
   }
 
+#if CAP_DRAW
 void ui() {
   measure_if_needed();
   initGraph(SX / zoomout, SY / zoomout, "conformist", false);
@@ -1407,7 +1455,9 @@ void ui() {
     klawisze();
     }
   }
+#endif
 
+#if CAP_BMP
 void export_image(const string& fname) {
   measure_if_needed();
   bitmap b = emptyBitmap(SX, SY);
@@ -1417,7 +1467,9 @@ void export_image(const string& fname) {
     b[y][x] |= 0xFF000000;
   writePng(fname.c_str(), b);
   }
+#endif
 
+#if CAP_BMP
 void export_video(ld spd, int cnt, const string& fname) {
   measure_if_needed();
   bitmap b = emptyBitmap(SX, SY);
@@ -1442,7 +1494,9 @@ void export_video(ld spd, int cnt, const string& fname) {
       }
     }
   }
+#endif
 
+#if CAP_BMP
 void export_cheetah(int cnt, const string& fname) {
   measure_if_needed();
   mousex = 790; mousey = 332;
@@ -1460,6 +1514,7 @@ void export_cheetah(int cnt, const string& fname) {
     printf("Saving: %s\n", buf);
     }
   }
+#endif
 }
 
 #include "automapper.cpp"
@@ -1482,10 +1537,14 @@ int main(int argc, char **argv) {
       SX = SY = atoi(next_arg());
       createb_circle();
       }
+    #if CAP_GD
     else if(s == "-mim") load_image_for_mapping(next_arg());
+    #endif
+    #if CAP_BMP
     else if(s == "-cbo") {
       createb_outer(next_arg_ipoint());
       }
+    #endif
     else if(s == "-trim") {
       int x1 = atoi(next_arg());
       int y1 = atoi(next_arg());
@@ -1493,17 +1552,21 @@ int main(int argc, char **argv) {
       int y2 = atoi(next_arg());
       trim(x1, y1, x2, y2);
       }
+    #if CAP_BMP
     else if(s == "-cbi") {
       ipoint axy = next_arg_ipoint();
       ipoint bxy = next_arg_ipoint();
       createb_inner(axy, bxy);
       }
+    #endif
+    #if CAP_BMP
     else if(s == "-mapat") {
       auto_map_at(addmargin(next_arg_ipoint()));
       }
     else if(s == "-mapall") {
       auto_map_all();
       }
+    #endif
     else if(s == "-sb") saveb(next_arg());
     else if(s == "-q") draw_progress = false, text_progress = false;
     else if(s == "-qt") text_progress = false;
@@ -1526,6 +1589,7 @@ int main(int argc, char **argv) {
       if(current_side < 0 || current_side >= isize(sides))
         pdie("error: wrong side number");
       }
+    #if CAP_BMP
     else if(s == "-li") load_image(next_arg());
     else if(s == "-lband") load_image_band(next_arg());
     else if(s == "-lbands") {
@@ -1539,16 +1603,22 @@ int main(int argc, char **argv) {
         load_image_band(buf);
         }
       }
+    #endif
     else if(s == "-zebra") csideroot().period_unit = zebra_period, csideroot().period_matrices = zebra_matrices;
     else if(s == "-p45") csideroot().period_unit = period_45, csideroot().period_matrices = matrices_45;
     else if(s == "-p46") csideroot().period_unit = period_46, csideroot().period_matrices = matrices_46;
     else if(s == "-period") csideroot().period = csideroot().period_unit * atof(next_arg());
     else if(s == "-fix") csideroot().type = stype::fixed_ring;
     else if(s == "-ash") csideroot().animshift += atof(next_arg());
+    #if CAP_DRAW
     else if(s == "-draw") ui();
+    #endif
+    #if CAP_GD
     else if(s == "-export") export_image(next_arg());
+    #endif
     else if(s == "-spinspeed") spinspeed = atof(next_arg());
     else if(s == "-marksides") mark_sides = true;
+    #if CAP_BMP
     else if(s == "-bandlen") {
       auto& si = csideroot();
       if(si.img_band.empty()) die("no bands to measure in -bandlen");
@@ -1558,11 +1628,14 @@ int main(int argc, char **argv) {
       printf("x = %d y = %d\n", totalx, y);
       printf("To make a loop, speed times count should be %lf\n", totalx * 1. / y);
       }
+    #endif
+    #if CAP_GD
     else if(s == "-exportv") {
       ld speed = atof(next_arg());
       int cnt = atoi(next_arg());
       export_video(speed, cnt, next_arg());
       }
+    #endif
     else if(s == "-killside") {
       for(int y=0; y<SY; y++)
       for(int x=0; x<SX; x++) {
@@ -1639,22 +1712,30 @@ int main(int argc, char **argv) {
       triangle_mode = true;
     else if(s == "-quincunx")
       do_quincunx();
+    #if CAP_GD
     else if(s == "-lquincunx") {
       ld scale = atof(next_arg());
       load_image_for_quincunx(next_arg(), scale);
       }
+    #endif
     else if(s == "-cvlgen")
       create_viewlist(current_side, next_arg());
+    #if CAP_GD
     else if(s == "-cvlimg")
       read_viewlist(current_side, next_arg());
+    #endif
+    #if CAP_GD
     else if(s == "-cheetah")
       cheetah = readPng(next_arg());
+    #endif
     else if(s == "-zo")
       zoomout = atoi(next_arg());
+    #if CAP_GD
     else if(s == "-excheetah") {
       int cnt = atoi(next_arg());
       export_cheetah(cnt, next_arg());
       }
+    #endif
     else die("unrecognized argument: " + s);
     }
 

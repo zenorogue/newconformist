@@ -8,6 +8,7 @@ cld mix(cld a1, cld a2, ld a, ld b, ld c) {
   return a1 + (a2-a1) * (b-a) / (c-a);
   }
 
+#if CAP_BMP
 void draw_spiral(bitmap& b, ld t) {
   // int edgelength = SX/3;
   
@@ -150,5 +151,5 @@ void draw_spiral(bitmap& b, ld t) {
     }    
   b.draw();
   }
-
+#endif
 }

@@ -51,6 +51,7 @@ cpoint band_to_disk_basic(cpoint c, sideinfo& si) {
 
 vector2<cld> map_to_stereo;
 
+#if CAP_BMP
 void draw_triangle(bitmap& b) {
   // int edgelength = SX/3;
   
@@ -133,5 +134,5 @@ void draw_triangle(bitmap& b) {
   b.draw();
   printf("draw\n");
   }
-
+#endif
 }

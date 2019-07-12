@@ -8,8 +8,13 @@
 #include <cmath>
 #include <string>
 
+#if CAP_BMP
 #include <SDL/SDL.h>
+#endif
+
+#if CAP_GD
 #include <gd.h>
+#endif
 
 namespace graph2 {
 
@@ -49,6 +54,7 @@ void pdie(const std::string& s) {
   exit(1);
   }
 
+#if CAP_BMP
 color errpixel;
 
 struct pixelrow {
@@ -115,6 +121,7 @@ bitmap emptyBitmap(int sx, int sy) {
   return bitmap(emptySurface(sx, sy), true, false);
   }
 
+#if CAP_GD
 bitmap fromGD(gdImagePtr im) {
   bitmap tgt = emptyBitmap(im->sx, im->sy);
   for(int y=0; y<im->sy; y++)
@@ -164,6 +171,8 @@ void writePng(const std::string& fname, const bitmap& bmp) {
   gdImageDestroy(im);
   fclose(f);
   }
+#endif
+#endif
 
 }
 #endif
