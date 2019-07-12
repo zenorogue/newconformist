@@ -1,5 +1,6 @@
 # newconformist
 Conformally map the hyperbolic plane to arbitrary shapes. See [our Bridges 2019 paper](https://archive.bridgesmathart.org/2019/bridges2019-91.html) for a full exposition.
+See also [our interactive Web-based explorable explanation](http://www.roguetemple.com/z/sims/nconf/) to understand the core ideas better.
 
 ![sample picture](http://roguetemple.com/z/newconformist/result.png)
 [(twitter link)](https://twitter.com/ZenoRogue/status/989908535818506243)
