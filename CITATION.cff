@@ -10,22 +10,30 @@ authors:
 title: "Newconformist"
 version: "2019-07-12"
 type: software
-date-released: 2019-07-12
+date-released: "2019-07-12"
 url: "https://github.com/zenorogue/newconformist"
 
 preferred-citation:
-- authors:
+  authors:
     - family-names: Kopczyński
       given-names: Eryk
     - family-names: Celińska-Kopczyńska
       given-names: Dorota
   title: "Conformal Mappings of the Hyperbolic Plane to Arbitrary Shapes"
+  type: article
   pages: "91--98"
-  collection-title: "Proceedings of Bridges 2019: Mathematics, Art, Music, Architecture, Education, Culture"
+  volume-title: "Proceedings of Bridges 2019: Mathematics, Art, Music, Architecture, Education, Culture"
   year: 2019
-  editor: "Goldstine, Susan and McKenna, Douglas and Fenyvesi, Krist\\'of"
   isbn: "978-1-938664-30-4"
   issn: "1099-6702"
-  publisher: "Tessellations Publishing, Phoenix, Arizona"
-  note: "Available online at \\url{http://archive.bridgesmathart.org/2019/bridges2019-91.pdf"
-
+  publisher: 
+    name: "Tessellations Publishing"
+    address: "Phoenix, Arizona"    
+  editors: 
+    - family-names: Goldstine
+      given-names: Susan
+    - family-names: McKenna
+      given-names: Douglas
+    - family-names: Fenyvesi
+      given-names: Krist\\'of
+  notes: "Available online at \\url{http://archive.bridgesmathart.org/2019/bridges2019-91.pdf}"
