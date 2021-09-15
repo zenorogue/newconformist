@@ -8,6 +8,7 @@ authors:
   given-names: "Dorota"
   orcid: "https://orcid.org/0000-0001-5910-0039"
 title: "Newconformist"
+version: "2019-07-12"
 type: software
 date-released: 2019-07-12
 url: "https://github.com/zenorogue/newconformist"
@@ -26,5 +27,5 @@ preferred-citation:
   isbn: "978-1-938664-30-4"
   issn: "1099-6702"
   publisher: "Tessellations Publishing, Phoenix, Arizona"
-  note: "Available online at \url{http://archive.bridgesmathart.org/2019/bridges2019-91.pdf"
+  note: "Available online at \\url{http://archive.bridgesmathart.org/2019/bridges2019-91.pdf"
 
