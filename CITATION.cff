@@ -1,0 +1,30 @@
+cff-version: 1.1.0
+message: "If you use newcoformlist in your research, it is the best to cite our Bridges paper (see https://archive.bridgesmathart.org/2019/bridges2019-91.pdf for BibTeX)."
+authors:
+- family-names: "Kopczyñski"
+  given-names: "Eryk"
+  orcid: "https://orcid.org/0000-0001-5588-1181"
+- family-names: "Celiñska-Kopczyñska"
+  given-names: "Dorota"
+  orcid: "https://orcid.org/0000-0001-5910-0039"
+title: "Newconformist"
+type: software
+date-released: 2019-07-12
+url: "https://github.com/zenorogue/newconformist"
+
+preferred-citation:
+- authors:
+    - family-names: Kopczyñski
+      given-names: Eryk
+    - family-names: Celiñska-Kopczyñska
+      given-names: Dorota
+  title: "Conformal Mappings of the Hyperbolic Plane to Arbitrary Shapes"
+  pages: "91--98"
+  collection-title: "Proceedings of Bridges 2019: Mathematics, Art, Music, Architecture, Education, Culture"
+  year: 2019
+  editor: "Goldstine, Susan and McKenna, Douglas and Fenyvesi, Krist\\'of"
+  isbn: "978-1-938664-30-4"
+  issn: "1099-6702"
+  publisher: "Tessellations Publishing, Phoenix, Arizona"
+  note: "Available online at \url{http://archive.bridgesmathart.org/2019/bridges2019-91.pdf"
+
