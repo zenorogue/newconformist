@@ -13,8 +13,8 @@ type: software
 date-released: "2019-07-12"
 url: "https://github.com/zenorogue/newconformist"
 
-preferred-citation:
-  authors:
+references:
+- authors:
     - family-names: Kopczyński
       given-names: Eryk
     - family-names: Celińska-Kopczyńska
