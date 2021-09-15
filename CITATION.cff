@@ -1,10 +1,10 @@
 cff-version: 1.1.0
 message: "If you use newcoformlist in your research, it is the best to cite our Bridges paper (see https://archive.bridgesmathart.org/2019/bridges2019-91.pdf for BibTeX)."
 authors:
-- family-names: "Kopczyñski"
+- family-names: "KopczyÅ„ski"
   given-names: "Eryk"
   orcid: "https://orcid.org/0000-0001-5588-1181"
-- family-names: "Celiñska-Kopczyñska"
+- family-names: "CeliÅ„ska-KopczyÅ„ska"
   given-names: "Dorota"
   orcid: "https://orcid.org/0000-0001-5910-0039"
 title: "Newconformist"
@@ -14,9 +14,9 @@ url: "https://github.com/zenorogue/newconformist"
 
 preferred-citation:
 - authors:
-    - family-names: Kopczyñski
+    - family-names: KopczyÅ„ski
       given-names: Eryk
-    - family-names: Celiñska-Kopczyñska
+    - family-names: CeliÅ„ska-KopczyÅ„ska
       given-names: Dorota
   title: "Conformal Mappings of the Hyperbolic Plane to Arbitrary Shapes"
   pages: "91--98"
