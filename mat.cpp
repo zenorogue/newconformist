@@ -54,6 +54,13 @@ cpoint hyper_to_disk(hyperpoint p) {
   return {p[0] / (1+p[2]), p[1] / (1+p[2])};
   }
 
+hyperpoint disk_to_hyper(cpoint p) {
+  hyperpoint h;
+  ld no = sqrt(1 - (p|p));
+  h[0] = p[0] / no; h[1] = p[1] / no; h[2] = 1 / no;
+  return h;
+  }
+
 // matrix multiplication
 
 hyperpoint mul(const transmatrix& t, hyperpoint h) {

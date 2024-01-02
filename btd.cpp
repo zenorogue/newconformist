@@ -149,7 +149,13 @@ void construct_btd() {
 
 ld btd_at = 2;
 
-cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& xval, ld& yval) {
+struct shift_data {
+  ld px, py, ps;
+  };
+bool use_shift;
+shift_data cshift;
+
+cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& xval, ld& yval, bool to_img = true) {
 
   cpoint c = pts[py][px].x;
   
@@ -190,6 +196,13 @@ cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& xval, ld& yval
 
     auto [x,y] = unband(c, si, -si.xcenter);
     
+    if(std::isinf(x) || std::isnan(x)) {
+      printf("c = %Lf,%Lf\n", c[0], c[1]);
+      printf("xcenter = %Lf\n", si.xcenter);
+      printf("scale = %Lf\n", si.cscale[0]);
+      exit(1);
+      }
+
     if(si.period > 0) {
       ld d = si.period;
       while(x > d/2) x -= d;
@@ -198,6 +211,12 @@ cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& xval, ld& yval
      
     p = equirectangular(x, y);
     
+    if(use_shift) {
+      p = mul(xpush(cshift.px), p);
+      p = mul(ypush(cshift.py), p);
+      p = mul(spin(cshift.ps), p);
+      }
+
     p = mul(spin(cspin), p);
     
     p = reperiod(p, si.period_matrices);
@@ -206,7 +225,7 @@ cpoint band_to_disk(int px, int py, sideinfo& si, int& tsiid, ld& xval, ld& yval
   
   cpoint pt = hyper_to_disk(p);  
   #if CAP_BMP
-  if(!si.img.s) return pt;
+  if(!si.img.s || !to_img) return pt;
   return (cpoint{1, 1} + pt) * (si.img.s->h / 2);
   #else
   return pt;

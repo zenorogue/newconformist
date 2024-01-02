@@ -272,12 +272,24 @@ ld hypot(ipoint a) { return std::hypot(a.x, a.y); }
 
 // find the point on the boundary nearest to cxy
 
+
+vector<tuple<ipoint, int>> all_boundary(pointmap& ptmap) {
+  vector<tuple<ipoint, int>> res;
+  for(int y=1; y<SY-1; y++) for(int x=0; x<SX-1; x++) {
+    ipoint xy(x, y);
+    for(int d=0; d<4; d++)
+      if(ptmap[xy].type == ptype::outside && ptmap[xy + dv[d]].type == ptype::inside)
+        res.emplace_back(xy, d);
+    }
+  return res;
+  }
+
 tuple<ipoint, int> boundary_point_near(pointmap& ptmap, ipoint cxy) {
   ld bestdist = 1e8;
-  int ad;
+  int ad = 0;
   ipoint axy (0, 0);
-    
-  for(int x=1; x<SX-1; x++) for(int y=1; y<SY-1; y++) {
+
+  for(int y=1; y<SY-1; y++) for(int x=0; x<SX-1; x++) {
     ipoint xy(x, y);
     for(int d=0; d<4; d++)
       if(ptmap[xy].type == ptype::outside && ptmap[xy + dv[d]].type == ptype::inside) {
@@ -286,7 +298,7 @@ tuple<ipoint, int> boundary_point_near(pointmap& ptmap, ipoint cxy) {
         }
     }
   
-  printf("bestdist = %lf %d,%d .. %d.%d\n", double(bestdist), cxy.x, cxy.y, axy.x, axy.y);
+  printf("bestdist = %lf %d,%d .. %d,%d\n", double(bestdist), cxy.x, cxy.y, axy.x, axy.y);
   
   return make_tuple(axy, ad);
   }
@@ -535,10 +547,16 @@ ld find_equation(vector<equation>& v, datapoint& p) {
 // draw the state of computation during mapping
 
 #if CAP_DRAW
+extern int video_out;
+bool states_to_video;
+
+string title = "conformist";
+
 void drawstates(pointmap& ptmap) {
   do {
     if(!draw_progress) return;
-    initGraph(SX/zoomout, SY/zoomout, "conformist", false);
+    initGraph(SX/zoomout, SY/zoomout, title, false);
+    SDL_WM_SetCaption(title.c_str(), 0);
     int statecolors[4] = {
       0x000080, 0x00FF00, 0x000000, 0x00FFFF };
   
@@ -560,6 +578,10 @@ void drawstates(pointmap& ptmap) {
       if(p.type == ptype::inside_left_down) part(screen[y][x], 0) |= 0x40;
       }
     screen.draw();
+    if(states_to_video) {
+      for(int y=0; y<SY; y++)
+        write(video_out, &screen[y][0], 4 * SX);
+      }
     
     SDL_Event event;
     SDL_Delay(1);
@@ -746,9 +768,15 @@ void retrieve(pointmap& ptmap, int i) {
   allpoints.clear();
   }
 
+int draw_each = 100;
+
 void computemap(pointmap& ptmap) {
 
+  string t = title;
+
   for(int i=0; i<2; i++) {
+    if(i == 0) title = t + " solve for X";
+    if(i == 1) title = t + " solve for Y";
     build_equations(ptmap, i, true);
     
     int lastt = SDL_GetTicks();
@@ -764,7 +792,7 @@ void computemap(pointmap& ptmap) {
           if(text_progress) printf("  %d/1000 [%d]\n", cpct, isize(p.eqs));
           #if CAP_DRAW
           int nextt = SDL_GetTicks();
-          if(nextt > lastt + 100) {
+          if(nextt > lastt + draw_each) {
             drawstates(ptmap);
             lastt = SDL_GetTicks();
             }
@@ -779,6 +807,8 @@ void computemap(pointmap& ptmap) {
     retrieve(ptmap, i);    
     printf("Done.\n");        
     }
+
+  title = t;
   }
 
 template<class T> void save(FILE *f, const T& x) {
@@ -1256,6 +1286,7 @@ void draw(bitmap &b) {
   else if(cheetah.s)
     draw_cheetah(b);
   else {
+    printf("draw_point will be called\n");
     for(int y=0; y<SY; y++)
     for(int x=0; x<SX; x++) {
       draw_point(b, x, y);
@@ -1370,9 +1401,9 @@ bool need_measure = true;
 
 // this mostly computes the cscale for the given side
 
-void measure(sideinfo& si) {
+bool measure(sideinfo& si) {
   
-  if(si.type == stype::fake) return;
+  if(si.type == stype::fake) return false;
   int sii = si.id;
   auto& gpts = *si.submap;  
 
@@ -1398,6 +1429,7 @@ void measure(sideinfo& si) {
   int q = size(cscs[0]);
   
   printf("point counts: %d/%d/%d\n", q, valid, total);
+  if(!q) return false;
   if(!q) die("no valid points");
   
   si.cscale = { cscs[0][q/2], cscs[1][q/2] };
@@ -1408,6 +1440,7 @@ void measure(sideinfo& si) {
     } */
 
   printf("conformity: %Lf %Lf (%d points)\n", si.cscale[0], si.cscale[1], q);
+  if(abs(si.cscale[0]) < 1e-6) return false;
   
   vector<ld> xes;
   for(int y=0; y<SY; y++)
@@ -1426,6 +1459,8 @@ void measure(sideinfo& si) {
       printf("fixed period multiple: %Lf\n", M_PI / si.cscale[0] / si.period);
       }
     }
+
+  return true;
   }
 
 void measure_if_needed() {
@@ -1518,6 +1553,7 @@ void export_cheetah(int cnt, const string& fname) {
 }
 
 #include "automapper.cpp"
+#include "badapple.cpp"
 
 int main(int argc, char **argv) {
   using namespace nconf;
@@ -1736,6 +1772,34 @@ int main(int argc, char **argv) {
       export_cheetah(cnt, next_arg());
       }
     #endif
+    else if(s == "-badapple-seg") {
+      int seg = atoi(next_arg());
+      badapple_segment(seg);
+      }
+    else if(s == "-draw-each") {
+      draw_each = atoi(next_arg());
+      }
+    else if(s == "-badapple-scale") {
+      badapple_scale = atof(next_arg());
+      }
+    else if(s == "-badapple-states") {
+      states_to_video = 1;
+      }
+    else if(s == "-badapple-flags") {
+      badapple_flags = atoi(next_arg());
+      }
+    else if(s == "-badapple-i") {
+      int fbase = atoi(next_arg());
+      int froof = atoi(next_arg());
+      auto s = next_arg();
+      badapple(fbase, froof, s);
+      }
+    else if(s == "-badapple-seg") {
+      badapple_segment(atoi(next_arg()));
+      }
+    else if(s == "-badapple-seg-info") {
+      badapple_segment_info();
+      }
     else die("unrecognized argument: " + s);
     }
 
